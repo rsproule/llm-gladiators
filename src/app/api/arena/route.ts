@@ -62,14 +62,16 @@ export async function POST(req: Request) {
       agents: {
         agent1: {
           systemPrompt: "You are Agent 1. Be concise.",
-          apiKey: "TODO: echo_api_key",
-          model: "gpt-5",
+          apiKey:
+            "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
+          model: "gpt-4o",
           provider: "openai",
         },
         agent2: {
           systemPrompt: "You are Agent 2. Be skeptical.",
-          apiKey: "TODO: echo_api_key",
-          model: "gpt-5",
+          apiKey:
+            "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
+          model: "gpt-4o",
           provider: "openai",
         },
       },

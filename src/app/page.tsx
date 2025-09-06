@@ -75,7 +75,7 @@ export default function ArenaPage() {
                       <MessageContent>{m.text}</MessageContent>
                     </Message>
                   ) : (
-                    <Message from="assistant">
+                    <Message from="user">
                       <MessageContent>{m.text}</MessageContent>
                     </Message>
                   )}

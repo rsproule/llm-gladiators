@@ -1,26 +1,28 @@
+import { AgentSchema, createAgentResponder } from "@/agents/responder";
 import { createEmitter } from "@/utils/messaging/emitter";
-import { createEchoOpenAI } from "@merit-systems/echo-typescript-sdk";
 import { createClient } from "@supabase/supabase-js";
 import { schemaTask } from "@trigger.dev/sdk";
-import { streamText } from "ai";
+import { type CoreMessage } from "ai";
 import { z } from "zod";
 
-const AgentSchema = z.object({
-  systemPrompt: z.string().min(1),
-  apiKey: z.string().min(1),
-  model: z.string().default("gpt-4o"),
-  provider: z.string().default("openai"),
-});
+// Agent schema and responder are defined in src/agents/responder
 
-const echoOpenAi = createEchoOpenAI(
-  {
-    appId: "6f0226b3-9d95-4d5a-96de-d178bd4dc9f7",
-  },
-  () =>
-    Promise.resolve(
-      "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
-    ),
-);
+type AgentLabel = "agent1" | "agent2";
+type SystemLabel = "system";
+type ArenaMessage = { agent: AgentLabel | SystemLabel; content: string };
+
+function mapConversationForAgent(
+  conversation: ArenaMessage[],
+  self: AgentLabel,
+): CoreMessage[] {
+  return conversation.map((m) => {
+    if (m.agent === "system") return { role: "system", content: m.content };
+    if (m.agent === self) return { role: "assistant", content: m.content };
+    return { role: "user", content: m.content };
+  });
+}
+
+// Responder logic extracted to src/agents/responder
 
 export const arenaTask = schemaTask({
   id: "arena",
@@ -32,14 +34,6 @@ export const arenaTask = schemaTask({
     }),
   }),
   run: async (payload) => {
-    let agent1Turn = 0;
-
-    // factory alias
-    const makeEmitter = (
-      agent: "agent1" | "agent2" | "system",
-      context: { turn?: number; messageId?: string; startSeq?: number } = {},
-    ) => createEmitter(payload.matchId, agent, context);
-
     // Setup Realtime Broadcast channel for live tokens
     const supa = createClient(
       process.env.SUPABASE_URL!,
@@ -50,41 +44,69 @@ export const arenaTask = schemaTask({
     const live = supa.channel(`match-${payload.matchId}`);
     live.subscribe();
 
-    // Example: stream Agent 1
-    const emitter1 = makeEmitter("agent1", { turn: agent1Turn++ });
-    const stream = streamText({
-      model: echoOpenAi("gpt-5"),
-      messages: [
-        { role: "system", content: payload.agents.agent1.systemPrompt },
-        {
-          role: "user",
-          content: "write a poem",
-        },
-      ],
-    });
+    const makeEmitter = (
+      agent: AgentLabel | SystemLabel,
+      context: { turn?: number; messageId?: string; startSeq?: number } = {},
+    ) => createEmitter(payload.matchId, agent, context);
 
-    let full = "";
-    let chunkIndex = 0;
-    for await (const chunk of stream.textStream) {
-      full += chunk;
+    // Optional kickoff system message
+    const sys = makeEmitter("system");
+    await sys.systemToken("Arena started: double agent loop running");
+
+    // Prepare agents
+    const agent1 = createAgentResponder(payload.agents.agent1);
+    const agent2 = createAgentResponder(payload.agents.agent2);
+
+    // Conversation history and loop config
+    const conversation: ArenaMessage[] = [
+      {
+        agent: "system",
+        content: "Begin the discussion. Keep replies concise.",
+      },
+      { agent: "agent2", content: "Please open the debate." },
+    ];
+
+    const totalTurns = 4; // 2 turns each by default
+
+    for (let turn = 0; turn < totalTurns; turn++) {
+      console.log("conversation step start", turn);
+      const label: AgentLabel = turn % 2 === 0 ? "agent1" : "agent2";
+      const emitter = makeEmitter(label, { turn });
+      const responder = label === "agent1" ? agent1 : agent2;
+      console.log("responder", label);
+
+      const coreMessages: CoreMessage[] = mapConversationForAgent(
+        conversation,
+        label,
+      );
+      const stream = responder.respond(coreMessages);
+      console.log("stream started");
+
+      let full = "";
+      let chunkIndex = 0;
+      for await (const chunk of stream.textStream) {
+        full += chunk;
+        await live.send({
+          type: "broadcast",
+          event: "agent-token",
+          payload: {
+            message_id: emitter.id,
+            agent: label,
+            turn: emitter.turn,
+            chunk: chunkIndex++,
+            token: chunk,
+          },
+        });
+      }
       await live.send({
         type: "broadcast",
-        event: "agent-token",
-        payload: {
-          message_id: emitter1.id,
-          agent: "agent1",
-          turn: emitter1.turn,
-          chunk: chunkIndex++,
-          token: chunk,
-        },
+        event: "agent-final",
+        payload: { message_id: emitter.id },
       });
+      await emitter.final(full);
+      conversation.push({ agent: label, content: full });
+      console.log("conversation step complete", turn);
     }
-    await live.send({
-      type: "broadcast",
-      event: "agent-final",
-      payload: { message_id: emitter1.id },
-    });
-    await emitter1.final(full);
 
     // Notify clients to stop listening (optional)
     await live.send({
@@ -93,8 +115,6 @@ export const arenaTask = schemaTask({
       payload: {},
     });
 
-    // System message
-    const sys = makeEmitter("system");
     await sys.systemToken("Arena task completed");
     return { ok: true };
   },
