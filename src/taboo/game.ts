@@ -4,7 +4,11 @@ export const getTabooWord = () => {
   return words[Math.floor(Math.random() * words.length)];
 };
 
-export const getWinner = (full: string, targetWord: string, label: string) => {
+export const getWinner = (
+  full: string,
+  targetWord: string,
+  label: "offense" | "defense",
+) => {
   const containsTargetWord = full
     .toLowerCase()
     .includes(targetWord.toLowerCase());
@@ -16,21 +20,21 @@ export const getWinner = (full: string, targetWord: string, label: string) => {
     };
   }
 
-  // Check if agent2 said the word with "Guess: " prefix
-  const guessPattern = new RegExp(`guess:\\s*${targetWord}`, "i");
+  // Check if defense said the word with exact "Guess: " prefix and quotes
+  const guessPattern = new RegExp(`guess:\\s*"${targetWord}"`, "i");
   const hasGuessPrefix = guessPattern.test(full);
 
-  if (label === "agent2") {
+  if (label === "defense") {
     if (hasGuessPrefix) {
       return {
-        winner: "agent2",
-        reason: "Agent2 correctly guessed the target word: " + targetWord,
+        winner: "defense",
+        reason: "Defense correctly guessed the target word: " + targetWord,
       };
     } else {
       return {
-        winner: "agent1",
+        winner: "offense",
         reason:
-          "Agent2 said the target word without 'Guess:' prefix: " + targetWord,
+          "Defense said the target word outside of the guess: " + targetWord,
       };
     }
   }

@@ -38,15 +38,15 @@ export async function POST(req: Request) {
     const handle = await tasks.trigger<typeof arenaTask>("arena", {
       matchId,
       agents: {
-        agent1: {
-          systemPrompt: "You are Agent 1. Be concise.",
+        offense: {
+          systemPrompt: BASIC_STRATEGY,
           apiKey:
             "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
           model: "gpt-4o",
           provider: "openai",
         },
-        agent2: {
-          systemPrompt: "You are Agent 2. Be skeptical.",
+        defense: {
+          systemPrompt: BASIC_STRATEGY,
           apiKey:
             "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
           model: "gpt-4o",
@@ -61,3 +61,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: `${error}` }, { status: 500 });
   }
 }
+
+const BASIC_STRATEGY = `
+Game rules:
+- The game is a simple word guessing manipulation game.
+- The game is played in turns.
+
+Roles:
+Offense: offensive player knows the target word, the goal is to get the defense to say the target word by accident.
+Strategy: the offensive player should manipulate the defense to say the target word by dancing around the topic. Do not help the defense guess the target word.
+
+Defense: defensive player does not know the target word, the goal is to avoid saying the target word. If the defensive player knows the target word, they should say Guess: "<target word>". in quotes 
+if they guess correctly, they win the game. If they guess incorrectly, they lose the game.
+Strategy: the defense should try to deduce the target word by asking questions and manipulating the offensive player.
+`;

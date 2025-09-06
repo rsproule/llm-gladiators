@@ -18,7 +18,7 @@ export function MessageLog({
   return (
     <div
       ref={scrollRef}
-      className="mt-2 flex-1 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-900"
+      className="m1-2 flex-1 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 dark:border-zinc-800 dark:bg-zinc-900"
     >
       {messages
         .sort((a, b) => a.turn - b.turn || a.id.localeCompare(b.id))

@@ -8,7 +8,7 @@ import { z } from "zod";
 
 // Agent schema and responder are defined in src/agents/responder
 
-type AgentLabel = "agent1" | "agent2";
+type AgentLabel = "offense" | "defense";
 type SystemLabel = "system";
 type ArenaMessage = { agent: AgentLabel | SystemLabel; content: string };
 
@@ -30,8 +30,8 @@ export const arenaTask = schemaTask({
   schema: z.object({
     matchId: z.string().min(1),
     agents: z.object({
-      agent1: AgentSchema,
-      agent2: AgentSchema,
+      offense: AgentSchema,
+      defense: AgentSchema,
     }),
   }),
   run: async (payload) => {
@@ -58,22 +58,28 @@ export const arenaTask = schemaTask({
 
     // Game setup (private to agents via per-turn system prompts)
     const targetWord = getTabooWord();
-    const offense: AgentLabel = "agent1";
-    const defense: AgentLabel = offense === "agent1" ? "agent2" : "agent1";
+
+    const sysStart = makeEmitter("system");
+    await sysStart.systemToken("Match started with target word: " + targetWord);
+
+    const offense: AgentLabel = "offense";
+    const defense: AgentLabel = "defense";
 
     // Prepare agents
-    const agent1 = createAgentResponder(payload.agents.agent1);
-    const agent2 = createAgentResponder(payload.agents.agent2);
+    const offenseResponder = createAgentResponder(payload.agents.offense);
+    const defenseResponder = createAgentResponder(payload.agents.defense);
 
     // Conversation history and loop config (shared messages only)
     const conversation: ArenaMessage[] = [];
 
     const totalTurns = 40; // 20 turns each by default
 
-    for (let turn = 0; turn < totalTurns; turn++) {
-      const label: AgentLabel = turn % 2 === 0 ? "agent1" : "agent2";
+    let turn = 0;
+    for (; turn < totalTurns; turn++) {
+      const label: AgentLabel = turn % 2 === 0 ? "offense" : "defense";
       const emitter = makeEmitter(label, { turn });
-      const responder = label === "agent1" ? agent1 : agent2;
+      const responder =
+        label === "offense" ? offenseResponder : defenseResponder;
 
       const sharedMessages: CoreMessage[] = mapConversationForAgent(
         conversation,
@@ -116,6 +122,11 @@ export const arenaTask = schemaTask({
         await sysWin.systemToken(`${winner} wins! ${reason}`);
         break;
       }
+    }
+
+    if (turn === totalTurns - 1) {
+      const sysWin = makeEmitter("system");
+      await sysWin.systemToken("Tie! The target word was: " + targetWord);
     }
 
     // Notify clients to stop listening (optional)

@@ -1,7 +1,7 @@
 import { insertMatchMessage } from "@/utils/supabase/admin";
 import { v4 as uuidv4 } from "uuid";
 
-export type AgentRole = "agent1" | "agent2" | "system";
+export type AgentRole = "offense" | "defense" | "system";
 
 export type Emitter = {
   id: string;

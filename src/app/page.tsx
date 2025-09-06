@@ -19,10 +19,10 @@ export default function ArenaPage() {
 
   const [matchId, setMatchId] = useState<string>("public-1234");
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { messages, status } = useMatchStream(matchId);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  console.log("messages", messages);
+  const hasGame = messages.length > 0;
 
   useEffect(() => {
     if (scrollRef.current)
@@ -30,15 +30,23 @@ export default function ArenaPage() {
   }, [messages]);
 
   const trigger = async () => {
+    if (running || hasGame) {
+      setError("A game already exists for this match id.");
+      return;
+    }
     setRunning(true);
     await fetch("/api/arena", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ matchId }),
-    }).catch((err) => {
-      console.error("/api/arena error", err);
-      setRunning(false);
-    });
+    })
+      .catch((err) => {
+        console.error("/api/arena error", err);
+        setError(err.message);
+      })
+      .finally(() => {
+        setRunning(false);
+      });
   };
 
   return (
@@ -53,11 +61,12 @@ export default function ArenaPage() {
         <button
           className="rounded-md bg-foreground px-3 py-2 text-background disabled:opacity-50"
           onClick={trigger}
-          disabled={running}
+          disabled={running || hasGame}
         >
           {running ? "Running..." : "Start"}
         </button>
       </div>
+      {error && <div className="mb-2 text-sm text-red-500">{error}</div>}
 
       <StatusDot status={status} />
 
@@ -66,24 +75,22 @@ export default function ArenaPage() {
           {messages
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
             .map((m) => (
-              <Conversation className="relative w-full">
-                <ConversationContent>
-                  {m.agent === "system" ? (
-                    <SystemMessage message={m} />
-                  ) : m.agent === "agent1" ? (
-                    <Message from="assistant">
-                      <MessageContent>{m.text}</MessageContent>
-                    </Message>
-                  ) : (
-                    <Message from="user">
-                      <MessageContent>{m.text}</MessageContent>
-                    </Message>
-                  )}
-                </ConversationContent>
-                <ConversationScrollButton />
-              </Conversation>
+              <div key={`${m.id}:${m.turn}`}>
+                {m.agent === "system" ? (
+                  <SystemMessage message={m} />
+                ) : m.agent === "offense" ? (
+                  <Message from="assistant">
+                    <MessageContent>{m.text}</MessageContent>
+                  </Message>
+                ) : (
+                  <Message from="user">
+                    <MessageContent>{m.text}</MessageContent>
+                  </Message>
+                )}
+              </div>
             ))}
         </ConversationContent>
+        <ConversationScrollButton />
       </Conversation>
     </div>
   );
