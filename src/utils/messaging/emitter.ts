@@ -33,6 +33,7 @@ export function createEmitter(
     channel?: BroadcastChannel;
     persistTokens?: boolean; // default false: only finals persisted for streams
     broadcastTokens?: boolean; // default false: only finals broadcast for streams
+    sourceId?: string; // identifier for this run/broadcaster
   },
 ): Emitter {
   const id = options?.messageId ?? generateMessageId();
@@ -43,6 +44,7 @@ export function createEmitter(
   const channel = options?.channel ?? null;
   const persistTokens = options?.persistTokens ?? false;
   const broadcastTokens = options?.broadcastTokens ?? false;
+  const sourceId = options?.sourceId;
 
   return {
     id,
@@ -72,6 +74,7 @@ export function createEmitter(
             turn,
             chunk: thisChunk,
             token: frame,
+            source_id: sourceId,
           },
         });
       }
@@ -95,7 +98,7 @@ export function createEmitter(
         await channel.send({
           type: "broadcast",
           event: "agent-final",
-          payload: { message_id: id },
+          payload: { message_id: id, source_id: sourceId },
         });
       }
     },
@@ -122,6 +125,7 @@ export function createEmitter(
             turn: 0,
             chunk: thisChunk,
             token: text,
+            source_id: sourceId,
           },
         });
       }

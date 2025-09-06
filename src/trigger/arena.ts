@@ -43,7 +43,7 @@ export const arenaTask = schemaTask({
     );
 
     const live = supa.channel(`match-${payload.matchId}`);
-    await live.subscribe();
+    live.subscribe();
 
     const makeEmitter = (
       agent: AgentLabel | SystemLabel,
@@ -54,6 +54,7 @@ export const arenaTask = schemaTask({
         channel: live,
         persistTokens: false, // only finals persisted
         broadcastTokens: true, // stream tokens over broadcast
+        sourceId: `arena:${payload.matchId}`,
       });
 
     // Game setup (private to agents via per-turn system prompts)

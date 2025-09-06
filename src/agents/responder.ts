@@ -11,20 +11,10 @@ export const AgentSchema = z.object({
 
 export type AgentConfig = z.infer<typeof AgentSchema>;
 
-// const echoOpenAi = createEchoOpenAI(
-//   {
-//     appId: "6f0226b3-9d95-4d5a-96de-d178bd4dc9f7",
-//   },
-//   () =>
-//     Promise.resolve(
-//       "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
-//     ),
-// );
-
 function createModelForAgent(config: AgentConfig) {
   // For now we route all providers via Echo OpenAI adapter.
   // Provider/apiKey selection can be extended here later.
-  let echoOpenAi = createEchoOpenAI(
+  const echoOpenAi = createEchoOpenAI(
     {
       appId: "6f0226b3-9d95-4d5a-96de-d178bd4dc9f7",
     },

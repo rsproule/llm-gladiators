@@ -13,20 +13,11 @@ type GroupedMessage = {
   order?: number;
 };
 
-// Module-level dedupe to survive StrictMode remounts or multiple listeners
-const globalProcessedChunkKeys: Set<string> = new Set();
-const DEBUG_STREAM = true;
-function dbg(...args: any[]) {
-  if (!DEBUG_STREAM) return;
-  // eslint-disable-next-line no-console
-  console.log("[useMatchStream]", ...args);
-}
-
 type StreamState = {
   status: SubStatus;
   messages: GroupedMessage[];
   lastChunkByMessage: Record<string, number>;
-  processedChunks: Record<string, true>;
+  processedChunks: Record<string, true>; // strict dedupe by message_id:chunk only
   finalized: Record<string, true>;
   orderCounter: number;
 };
@@ -125,22 +116,17 @@ function reducer(state: StreamState, action: Action): StreamState {
     }
     case "token": {
       const { message_id, agent, turn, chunk, token } = action.payload;
-      const key = `${message_id}:${chunk}`;
-      if (state.processedChunks[key]) {
-        dbg("reducer skip: processed", { key });
-        return state;
-      }
-      if (state.finalized[message_id]) {
-        dbg("reducer skip: finalized", { message_id });
-        return state;
-      }
+      const chunkNum = typeof chunk === "number" ? chunk : Number(chunk ?? 0);
+      const key = `${message_id}:${chunkNum}`;
+      if (state.processedChunks[key]) return state;
+      if (state.finalized[message_id]) return state;
       const last = state.lastChunkByMessage[message_id] ?? -1;
-      if (typeof chunk === "number" && chunk <= last) {
-        dbg("reducer skip: out_of_order_or_dup", { message_id, chunk, last });
-        return state;
-      }
+      if (typeof chunkNum === "number" && chunkNum <= last) return state;
 
-      const nextMessages = [...state.messages];
+      // Important: deep clone message objects to keep reducer pure.
+      // Copying only the array causes object mutation to leak into prev state,
+      // which Strict Mode double-invocation will observe and append twice.
+      const nextMessages = state.messages.map((m) => ({ ...m }));
       let i = nextMessages.findIndex((m) => m.id === message_id);
       if (i === -1) {
         nextMessages.push({
@@ -153,18 +139,24 @@ function reducer(state: StreamState, action: Action): StreamState {
         });
         i = nextMessages.length - 1;
       }
-      if (nextMessages[i].done) {
-        dbg("reducer skip: already_done", { message_id });
-        return state;
+      if (nextMessages[i].done) return state;
+      // Handle providers that emit cumulative full text frames instead of deltas
+      let toAppend = token ?? "";
+      const existing = nextMessages[i].text;
+      if (toAppend) {
+        if (toAppend.startsWith(existing)) {
+          toAppend = toAppend.slice(existing.length);
+        } else if (existing.startsWith(toAppend)) {
+          toAppend = "";
+        }
       }
-      if (token) nextMessages[i].text += token;
-      dbg("reducer append", { key, len: nextMessages[i].text.length });
+      if (toAppend) nextMessages[i].text += toAppend;
       return {
         ...state,
         messages: nextMessages,
         lastChunkByMessage: {
           ...state.lastChunkByMessage,
-          ...(typeof chunk === "number" ? { [message_id]: chunk } : {}),
+          ...(typeof chunkNum === "number" ? { [message_id]: chunkNum } : {}),
         },
         processedChunks: { ...state.processedChunks, [key]: true },
         orderCounter:
@@ -213,12 +205,9 @@ export function useMatchStream(matchId: string) {
 
   useEffect(() => {
     let cancelled = false;
-    const instanceId = Math.random().toString(36).slice(2, 8);
-    dbg("init", { instanceId, matchId });
     dispatch({ type: "connecting" });
 
     const ch = supa.channel(`match-${matchId}`);
-    dbg("channel created", { instanceId, topic: `match-${matchId}` });
 
     ch.on("broadcast", { event: "agent-token" }, ({ payload }) => {
       if (cancelled) return;
@@ -228,32 +217,20 @@ export function useMatchStream(matchId: string) {
         turn?: number;
         chunk?: number;
         token?: string;
+        source_id?: string;
       };
-      const chunkKey = `${row.message_id}:${row.chunk}`;
-      if (typeof row.chunk === "number") {
-        if (globalProcessedChunkKeys.has(chunkKey)) {
-          dbg("skip duplicate token", {
-            instanceId,
-            chunkKey,
-            reason: "globalProcessedChunkKeys",
-          });
-          return;
-        }
-        globalProcessedChunkKeys.add(chunkKey);
-      }
-      dbg("token", {
-        instanceId,
-        message_id: row.message_id,
-        chunk: row.chunk,
-        agent: row.agent,
-      });
+      if (
+        row.source_id &&
+        row.source_id !== `arena:${matchId}` &&
+        row.agent !== "system"
+      )
+        return;
       dispatch({ type: "token", payload: row });
     });
 
     ch.on("broadcast", { event: "agent-final" }, async ({ payload }) => {
       if (cancelled) return;
       const row = payload as { message_id: string };
-      dbg("final received", { instanceId, message_id: row.message_id });
       const { data: finalRow } = await supa
         .from("match_messages")
         .select("agent, turn, token")
@@ -262,11 +239,6 @@ export function useMatchStream(matchId: string) {
         .order("id", { ascending: false })
         .limit(1)
         .maybeSingle();
-      dbg("final fetched", {
-        instanceId,
-        message_id: row.message_id,
-        hasRow: !!finalRow,
-      });
       dispatch({
         type: "final",
         payload: {
@@ -279,32 +251,27 @@ export function useMatchStream(matchId: string) {
     });
 
     ch.subscribe((status) => {
-      dbg("subscribe status", { instanceId, status });
       if (cancelled) return;
       if (status === "SUBSCRIBED") {
         dispatch({ type: "listening" });
         ch.on("broadcast", { event: "arena-complete" }, () => {
-          dbg("arena-complete", { instanceId });
           if (!cancelled) dispatch({ type: "disconnected" });
         });
       }
     });
 
     (async () => {
-      dbg("initial fetch start", { instanceId });
       const { data } = await supa
         .from("match_messages")
         .select("*")
         .eq("match_id", matchId)
         .order("id", { ascending: true });
-      dbg("initial fetch done", { instanceId, rows: (data ?? []).length });
       if (cancelled) return;
       dispatch({ type: "initial", payload: { rows: (data ?? []) as any[] } });
     })();
 
     return () => {
       cancelled = true;
-      dbg("cleanup", { instanceId });
       supa.removeChannel(ch);
       dispatch({ type: "disconnected" });
     };
