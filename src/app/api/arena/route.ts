@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 
 type PostBody = {
   matchId: string;
+  apiKey?: string;
 };
 
 export async function POST(req: Request) {
@@ -35,20 +36,22 @@ export async function POST(req: Request) {
     });
     await emitter.systemToken("Match queued");
 
+    const defaultApiKey =
+      process.env.ECHO_API_KEY ||
+      "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494";
+
     const handle = await tasks.trigger<typeof arenaTask>("arena", {
       matchId,
       agents: {
         offense: {
           systemPrompt: BASIC_STRATEGY,
-          apiKey:
-            "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
+          apiKey: defaultApiKey,
           model: "gpt-4o",
           provider: "openai",
         },
         defense: {
           systemPrompt: BASIC_STRATEGY,
-          apiKey:
-            "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494",
+          apiKey: defaultApiKey,
           model: "gpt-4o",
           provider: "openai",
         },

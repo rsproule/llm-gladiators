@@ -55,6 +55,7 @@ type Action =
           token: string;
           kind: string;
           id?: number;
+          created_at: string;
         }>;
       };
     };
@@ -68,7 +69,10 @@ function reducer(state: StreamState, action: Action): StreamState {
     case "disconnected":
       return { ...state, status: "disconnected" };
     case "initial": {
-      const grouped = new Map<string, GroupedMessage & { idMin?: number }>();
+      const grouped = new Map<
+        string,
+        GroupedMessage & { createdAt?: string }
+      >();
       const finalized: Record<string, true> = { ...state.finalized };
       for (const r of action.payload.rows) {
         const id = r.message_id;
@@ -76,7 +80,7 @@ function reducer(state: StreamState, action: Action): StreamState {
         const turn = r.turn ?? 0;
         const token = r.token ?? "";
         const kind = r.kind ?? "token";
-        const rowId = typeof r.id === "number" ? r.id : undefined;
+        const createdAt = r.created_at;
         if (!grouped.has(id)) {
           grouped.set(id, {
             id,
@@ -84,7 +88,7 @@ function reducer(state: StreamState, action: Action): StreamState {
             text: "",
             turn,
             done: false,
-            idMin: rowId,
+            createdAt,
           });
         }
         const g = grouped.get(id)!;
@@ -94,19 +98,29 @@ function reducer(state: StreamState, action: Action): StreamState {
           finalized[id] = true;
         }
         if (kind === "system" && token && !g.text) g.text = token;
-        if (typeof rowId === "number") {
-          g.idMin =
-            typeof g.idMin === "number" ? Math.min(g.idMin, rowId) : rowId;
+        if (createdAt && (!g.createdAt || createdAt < g.createdAt)) {
+          g.createdAt = createdAt;
         }
       }
-      const finalizedArr = Array.from(grouped.values()).map((g) => ({
-        id: g.id,
-        agent: g.agent,
-        text: g.text,
-        turn: g.turn,
-        done: g.done,
-        order: g.idMin,
-      }));
+      const finalizedArr = Array.from(grouped.values())
+        .sort((a, b) => {
+          // Sort by created_at timestamp for true chronological order
+          if (a.createdAt && b.createdAt) {
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+          }
+          // Fallback to turn if timestamps missing
+          return a.turn - b.turn;
+        })
+        .map((g, index) => ({
+          id: g.id,
+          agent: g.agent,
+          text: g.text,
+          turn: g.turn,
+          done: g.done,
+          order: index, // Use sequential index for consistent ordering
+        }));
       return {
         ...state,
         messages: finalizedArr,
@@ -129,15 +143,27 @@ function reducer(state: StreamState, action: Action): StreamState {
       const nextMessages = state.messages.map((m) => ({ ...m }));
       let i = nextMessages.findIndex((m) => m.id === message_id);
       if (i === -1) {
-        nextMessages.push({
+        // Insert in the correct position based on turn
+        const insertIndex = nextMessages.findIndex((m) => m.turn > (turn ?? 0));
+        const newMessage = {
           id: message_id,
           agent,
           text: "",
           turn: turn ?? 0,
           done: false,
-          order: state.orderCounter,
-        });
-        i = nextMessages.length - 1;
+          order: insertIndex === -1 ? nextMessages.length : insertIndex,
+        };
+        if (insertIndex === -1) {
+          nextMessages.push(newMessage);
+          i = nextMessages.length - 1;
+        } else {
+          nextMessages.splice(insertIndex, 0, newMessage);
+          i = insertIndex;
+          // Update order values for messages after insertion
+          for (let j = insertIndex + 1; j < nextMessages.length; j++) {
+            nextMessages[j].order = j;
+          }
+        }
       }
       if (nextMessages[i].done) return state;
       // Handle providers that emit cumulative full text frames instead of deltas
@@ -167,17 +193,28 @@ function reducer(state: StreamState, action: Action): StreamState {
     }
     case "final": {
       const { message_id, agent, turn, text } = action.payload;
-      const nextMessages = [...state.messages];
+      const nextMessages = state.messages.map((m) => ({ ...m }));
       const i = nextMessages.findIndex((m) => m.id === message_id);
       if (i === -1) {
-        nextMessages.push({
+        // Insert in the correct position based on turn
+        const insertIndex = nextMessages.findIndex((m) => m.turn > turn);
+        const newMessage = {
           id: message_id,
           agent,
           text,
           turn,
           done: true,
-          order: state.orderCounter,
-        });
+          order: insertIndex === -1 ? nextMessages.length : insertIndex,
+        };
+        if (insertIndex === -1) {
+          nextMessages.push(newMessage);
+        } else {
+          nextMessages.splice(insertIndex, 0, newMessage);
+          // Update order values for messages after insertion
+          for (let j = insertIndex + 1; j < nextMessages.length; j++) {
+            nextMessages[j].order = j;
+          }
+        }
       } else {
         nextMessages[i] = { ...nextMessages[i], agent, text, turn, done: true };
       }
@@ -265,7 +302,7 @@ export function useMatchStream(matchId: string) {
         .from("match_messages")
         .select("*")
         .eq("match_id", matchId)
-        .order("id", { ascending: true });
+        .order("created_at", { ascending: true });
       if (cancelled) return;
       dispatch({ type: "initial", payload: { rows: data ?? [] } });
     })();

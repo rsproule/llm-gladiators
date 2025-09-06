@@ -60,7 +60,7 @@ export const arenaTask = schemaTask({
     // Game setup (private to agents via per-turn system prompts)
     const targetWord = getTabooWord();
 
-    const sysStart = makeEmitter("system");
+    const sysStart = makeEmitter("system", { turn: -1 });
     await sysStart.systemToken("Match started with target word: " + targetWord);
 
     const offense: AgentLabel = "offense";
@@ -135,7 +135,7 @@ export const arenaTask = schemaTask({
     });
 
     const sysEnd = makeEmitter("system");
-    await sysEnd.systemToken("Arena task completed");
+    await sysEnd.systemToken("Game over!");
     return { ok: true };
   },
 });
