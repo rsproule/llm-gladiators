@@ -11,6 +11,14 @@ export type Emitter = {
   systemToken: (text: string) => Promise<void>;
 };
 
+type BroadcastChannel = {
+  send: (message: {
+    type: "broadcast";
+    event: string;
+    payload: any;
+  }) => Promise<any>;
+} | null;
+
 export function generateMessageId(): string {
   return uuidv4();
 }
@@ -18,51 +26,105 @@ export function generateMessageId(): string {
 export function createEmitter(
   matchId: string,
   agent: AgentRole,
-  options?: { turn?: number; messageId?: string; startSeq?: number },
+  options?: {
+    turn?: number;
+    messageId?: string;
+    startSeq?: number;
+    channel?: BroadcastChannel;
+    persistTokens?: boolean; // default false: only finals persisted for streams
+    broadcastTokens?: boolean; // default false: only finals broadcast for streams
+  },
 ): Emitter {
   const id = options?.messageId ?? generateMessageId();
   const turn = options?.turn ?? 0;
   let chunk = 0;
   let seq = options?.startSeq ?? 0;
+  let finalWritten = false;
+  const channel = options?.channel ?? null;
+  const persistTokens = options?.persistTokens ?? false;
+  const broadcastTokens = options?.broadcastTokens ?? false;
 
   return {
     id,
     turn,
     async token(frame: string) {
-      await insertMatchMessage({
-        match_id: matchId,
-        agent,
-        token: frame,
-        message_id: id,
-        turn,
-        chunk: chunk++,
-        seq: seq++,
-        kind: "token",
-      } as any);
+      const thisChunk = chunk++;
+      const thisSeq = seq++;
+      if (persistTokens) {
+        await insertMatchMessage({
+          match_id: matchId,
+          agent,
+          token: frame,
+          message_id: id,
+          turn,
+          chunk: thisChunk,
+          seq: thisSeq,
+          kind: "token",
+        } as any);
+      }
+      if (channel && broadcastTokens) {
+        await channel.send({
+          type: "broadcast",
+          event: "agent-token",
+          payload: {
+            message_id: id,
+            agent,
+            turn,
+            chunk: thisChunk,
+            token: frame,
+          },
+        });
+      }
     },
     async final(finalText?: string) {
+      if (finalWritten) return;
+      finalWritten = true;
+      const thisChunk = chunk++;
+      const thisSeq = seq++;
       await insertMatchMessage({
         match_id: matchId,
         agent,
         token: finalText ?? "",
         message_id: id,
         turn,
-        chunk: chunk++,
-        seq: seq++,
+        chunk: thisChunk,
+        seq: thisSeq,
         kind: "final",
       } as any);
+      if (channel) {
+        await channel.send({
+          type: "broadcast",
+          event: "agent-final",
+          payload: { message_id: id },
+        });
+      }
     },
     async systemToken(text: string) {
+      const thisChunk = chunk++;
+      const thisSeq = seq++;
       await insertMatchMessage({
         match_id: matchId,
         agent: "system",
         token: text,
         message_id: id,
         turn: 0,
-        chunk: chunk++,
-        seq: seq++,
+        chunk: thisChunk,
+        seq: thisSeq,
         kind: "system",
       } as any);
+      if (channel) {
+        await channel.send({
+          type: "broadcast",
+          event: "agent-token",
+          payload: {
+            message_id: id,
+            agent: "system",
+            turn: 0,
+            chunk: thisChunk,
+            token: text,
+          },
+        });
+      }
     },
   };
 }
