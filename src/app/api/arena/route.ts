@@ -1,7 +1,9 @@
 import type { arenaTask } from "@/trigger/arena";
 import { insertMatchMessage } from "@/utils/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import { tasks } from "@trigger.dev/sdk";
 import { NextResponse } from "next/server";
+import { v4 as uuidv4 } from "uuid";
 
 type PostBody = {
   matchId: string;
@@ -19,12 +21,40 @@ export async function POST(req: Request) {
       );
     }
 
-    // Emit system message: queued
+    // Emit system message: queued (persist + broadcast)
+    const messageId = uuidv4();
     await insertMatchMessage({
       match_id: matchId,
       agent: "system",
-      seq: 0,
       token: "Match queued",
+      message_id: messageId,
+      turn: 0,
+      chunk: 0,
+      seq: 0,
+      kind: "system",
+    } as any);
+
+    const supa = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    );
+    const ch = supa.channel(`match-${matchId}`);
+    await new Promise<void>((resolve) => {
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") resolve();
+      });
+    });
+    await ch.send({
+      type: "broadcast",
+      event: "agent-token",
+      payload: {
+        message_id: messageId,
+        agent: "system",
+        turn: 0,
+        chunk: 0,
+        token: "Match queued",
+      },
     });
 
     const handle = await tasks.trigger<typeof arenaTask>("arena", {
