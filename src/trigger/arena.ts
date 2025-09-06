@@ -64,7 +64,6 @@ export const arenaTask = schemaTask({
     await sysStart.systemToken("Match started with target word: " + targetWord);
 
     const offense: AgentLabel = "offense";
-    const defense: AgentLabel = "defense";
 
     // Prepare agents
     const offenseResponder = createAgentResponder(payload.agents.offense);
@@ -108,16 +107,14 @@ export const arenaTask = schemaTask({
       const stream = responder.respond(coreMessages);
 
       let full = "";
-      let chunkIndex = 0;
       for await (const chunk of stream.textStream) {
         full += chunk;
         await emitter.token(chunk);
-        chunkIndex++;
       }
       await emitter.final(full);
       conversation.push({ agent: label, content: full });
 
-      let { winner, reason } = getWinner(full, targetWord, label);
+      const { winner, reason } = getWinner(full, targetWord, label);
       if (winner) {
         const sysWin = makeEmitter("system");
         await sysWin.systemToken(`${winner} wins! ${reason}`);

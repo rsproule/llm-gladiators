@@ -1,4 +1,7 @@
-import { insertMatchMessage } from "@/utils/supabase/admin";
+import {
+  insertMatchMessage,
+  type MatchMessageInsert,
+} from "@/utils/supabase/admin";
 import { v4 as uuidv4 } from "uuid";
 
 export type AgentRole = "offense" | "defense" | "system";
@@ -15,8 +18,8 @@ type BroadcastChannel = {
   send: (message: {
     type: "broadcast";
     event: string;
-    payload: any;
-  }) => Promise<any>;
+    payload: Record<string, unknown>;
+  }) => Promise<unknown>;
 } | null;
 
 export function generateMessageId(): string {
@@ -62,7 +65,7 @@ export function createEmitter(
           chunk: thisChunk,
           seq: thisSeq,
           kind: "token",
-        } as any);
+        } satisfies MatchMessageInsert);
       }
       if (channel && broadcastTokens) {
         await channel.send({
@@ -93,7 +96,7 @@ export function createEmitter(
         chunk: thisChunk,
         seq: thisSeq,
         kind: "final",
-      } as any);
+      } satisfies MatchMessageInsert);
       if (channel) {
         await channel.send({
           type: "broadcast",
@@ -114,7 +117,7 @@ export function createEmitter(
         chunk: thisChunk,
         seq: thisSeq,
         kind: "system",
-      } as any);
+      } satisfies MatchMessageInsert);
       if (channel) {
         await channel.send({
           type: "broadcast",

@@ -243,9 +243,9 @@ export function useMatchStream(matchId: string) {
         type: "final",
         payload: {
           message_id: row.message_id,
-          agent: (finalRow as any)?.agent ?? "system",
-          turn: (finalRow as any)?.turn ?? 0,
-          text: (finalRow as any)?.token ?? "",
+          agent: finalRow?.agent ?? "system",
+          turn: finalRow?.turn ?? 0,
+          text: finalRow?.token ?? "",
         },
       });
     });
@@ -267,7 +267,7 @@ export function useMatchStream(matchId: string) {
         .eq("match_id", matchId)
         .order("id", { ascending: true });
       if (cancelled) return;
-      dispatch({ type: "initial", payload: { rows: (data ?? []) as any[] } });
+      dispatch({ type: "initial", payload: { rows: data ?? [] } });
     })();
 
     return () => {

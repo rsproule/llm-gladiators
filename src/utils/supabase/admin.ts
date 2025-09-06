@@ -12,6 +12,7 @@ export type MatchMessageInsert =
 
 export async function insertMatchMessage(row: MatchMessageInsert) {
   const supa = createAdminClient();
-  const { error } = await supa.from("match_messages").insert(row);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supa as any).from("match_messages").insert(row);
   if (error) throw error;
 }

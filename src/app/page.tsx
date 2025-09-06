@@ -10,13 +10,6 @@ import { useMatchStream } from "@/hooks/useMatchStream";
 import { useEffect, useRef, useState } from "react";
 
 export default function ArenaPage() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    return <div className="p-4">Missing Supabase public env vars</div>;
-  }
-
   const [matchId, setMatchId] = useState<string>("public-1234");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +21,13 @@ export default function ArenaPage() {
     if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return <div className="p-4">Missing Supabase public env vars</div>;
+  }
 
   const trigger = async () => {
     if (running || hasGame) {
