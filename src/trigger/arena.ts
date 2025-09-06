@@ -1,4 +1,5 @@
 import { AgentSchema, createAgentResponder } from "@/agents/responder";
+import { getTabooWord, getWinner } from "@/taboo/game";
 import { createEmitter } from "@/utils/messaging/emitter";
 import { createClient } from "@supabase/supabase-js";
 import { schemaTask } from "@trigger.dev/sdk";
@@ -55,35 +56,48 @@ export const arenaTask = schemaTask({
         broadcastTokens: true, // stream tokens over broadcast
       });
 
-    // Optional kickoff system message (use a fresh emitter per system message)
-    const targetWord = "butterfish";
-    const sysStart = makeEmitter("system");
-    await sysStart.systemToken("Match started with target word: " + targetWord);
+    // Game setup (private to agents via per-turn system prompts)
+    const targetWord = getTabooWord();
+    const offense: AgentLabel = "agent1";
+    const defense: AgentLabel = offense === "agent1" ? "agent2" : "agent1";
 
     // Prepare agents
     const agent1 = createAgentResponder(payload.agents.agent1);
     const agent2 = createAgentResponder(payload.agents.agent2);
 
-    // Conversation history and loop config
-    const conversation: ArenaMessage[] = [
-      {
-        agent: "system",
-        content: "Begin the discussion. Keep replies concise.",
-      },
-      { agent: "agent2", content: "Please open the debate." },
-    ];
+    // Conversation history and loop config (shared messages only)
+    const conversation: ArenaMessage[] = [];
 
-    const totalTurns = 4; // 2 turns each by default
+    const totalTurns = 40; // 20 turns each by default
 
     for (let turn = 0; turn < totalTurns; turn++) {
       const label: AgentLabel = turn % 2 === 0 ? "agent1" : "agent2";
       const emitter = makeEmitter(label, { turn });
       const responder = label === "agent1" ? agent1 : agent2;
 
-      const coreMessages: CoreMessage[] = mapConversationForAgent(
+      const sharedMessages: CoreMessage[] = mapConversationForAgent(
         conversation,
         label,
       );
+      const privateRolePrompt: CoreMessage[] =
+        label === offense
+          ? [
+              {
+                role: "system",
+                content:
+                  'You are Offense. The target word is: "' + targetWord + '".',
+              },
+            ]
+          : [
+              {
+                role: "system",
+                content: "You are Defense.",
+              },
+            ];
+      const coreMessages: CoreMessage[] = [
+        ...privateRolePrompt,
+        ...sharedMessages,
+      ];
       const stream = responder.respond(coreMessages);
 
       let full = "";
@@ -95,6 +109,13 @@ export const arenaTask = schemaTask({
       }
       await emitter.final(full);
       conversation.push({ agent: label, content: full });
+
+      let { winner, reason } = getWinner(full, targetWord, label);
+      if (winner) {
+        const sysWin = makeEmitter("system");
+        await sysWin.systemToken(`${winner} wins! ${reason}`);
+        break;
+      }
     }
 
     // Notify clients to stop listening (optional)
