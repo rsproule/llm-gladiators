@@ -1,103 +1,148 @@
-import Image from "next/image";
+"use client";
+import { createBrowserClient } from "@/utils/supabase/client";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-export default function Home() {
+type Message = { ts: string; text: string };
+
+function ArenaInner() {
+  const [matchId, setMatchId] = useState<string>("public-123");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [running, setRunning] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const supa = useMemo(() => createBrowserClient(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let channel: ReturnType<typeof supa.channel> | null = null;
+
+    (async () => {
+      channel = supa.channel(`realtime:match_messages:${matchId}`).on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "match_messages",
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          const row = payload.new as { agent: string; token: string };
+          if (!cancelled) {
+            setMessages((m) => [
+              ...m,
+              {
+                ts: new Date().toISOString(),
+                text: `${row.agent}: ${row.token}`,
+              },
+            ]);
+          }
+        },
+      );
+
+      // Ensure subscription is active before initial fetch
+      await new Promise<void>((resolve) => {
+        channel!.subscribe((status) => {
+          if (status === "SUBSCRIBED") resolve();
+        });
+      });
+
+      if (cancelled) return;
+
+      const { data: initial } = await supa
+        .from("match_messages")
+        .select("agent, token, seq")
+        .eq("match_id", matchId)
+        .order("seq", { ascending: true });
+      if (!cancelled) {
+        setMessages(
+          (initial ?? []).map((r) => ({
+            ts: new Date().toISOString(),
+            text: `${r.agent}: ${r.token}`,
+          })),
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supa.removeChannel(channel);
+    };
+  }, [matchId, supa]);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages]);
+
+  const trigger = async () => {
+    setRunning(true);
+    await fetch("/api/arena", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ matchId }),
+    }).catch((err) => {
+      setMessages((m) => [
+        ...m,
+        { ts: new Date().toISOString(), text: `error: ${String(err)}` },
+      ]);
+      setRunning(false);
+    });
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div style={{ padding: 16, maxWidth: 800, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600 }}>Arena</h1>
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <input
+          value={matchId}
+          onChange={(e) => setMatchId(e.target.value)}
+          placeholder="match id"
+          style={{ border: "1px solid #ccc", padding: 8, flex: 1 }}
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+        <button
+          onClick={trigger}
+          disabled={running}
+          style={{ padding: "8px 12px" }}
+        >
+          {running ? "Running..." : "Start"}
+        </button>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div
+        ref={listRef}
+        style={{
+          border: "1px solid #e5e7eb",
+          marginTop: 12,
+          padding: 8,
+          height: 360,
+          overflowY: "auto",
+          borderRadius: 6,
+          background: "#fafafa",
+        }}
+      >
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            <span style={{ color: "#6b7280" }}>{m.ts}</span> {m.text}
+          </div>
+        ))}
+        {messages.length === 0 && (
+          <div style={{ color: "#9ca3af" }}>No messages yet</div>
+        )}
+      </div>
     </div>
   );
+}
+
+export default function ArenaPage() {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return <div style={{ padding: 16 }}>Missing Supabase public env vars</div>;
+  }
+  return <ArenaInner />;
 }

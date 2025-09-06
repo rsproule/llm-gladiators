@@ -4,16 +4,33 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:trigger": "pnpm dlx trigger.dev@latest dev",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "supabase:init": "npx supabase init",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:db:push": "npx supabase db push",
+    "supabase:db:reset": "npx supabase db reset",
+    "supabase:migration:new": "npx supabase migration new",
+    "supabase:generate-types": "mkdir -p src/types && npx supabase gen types typescript --local --schema public > src/types/supabase.ts",
+    "supabase:studio": "npx supabase start --no-browser && open http://localhost:54323",
+    "supabase:login": "npx supabase login",
+    "supabase:link": "npx supabase link --project-ref fenyfyutvwwxvzbeuhca",
+    "db:apply:linked": "npx supabase db push --linked",
+    "db:verify:linked": "npx supabase db query --linked < scripts/verify.sql"
   },
   "dependencies": {
+    "@merit-systems/echo-next-sdk": "^0.0.5",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.2",
     "@trigger.dev/build": "^4.0.2",
     "@trigger.dev/sdk": "^4.0.2",
     "next": "15.5.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -21,6 +38,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",

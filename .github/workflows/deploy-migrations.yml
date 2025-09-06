@@ -1,0 +1,50 @@
+name: Deploy Supabase Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      sql_path:
+        description: Path to SQL file to apply
+        required: false
+        default: supabase.sql
+
+permissions:
+  contents: read
+
+concurrency: migrations-${{ github.ref }}
+
+env:
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+  DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+
+jobs:
+  apply:
+    name: Apply SQL to Supabase (prod)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify SQL file exists
+        run: |
+          test -f "${{ github.event.inputs.sql_path }}" || (echo "SQL file not found: ${{ github.event.inputs.sql_path }}"; exit 1)
+
+      - name: Dry-run in transaction (ROLLBACK)
+        run: |
+          echo "BEGIN;" > /tmp/dryrun.sql
+          cat "${{ github.event.inputs.sql_path }}" >> /tmp/dryrun.sql
+          echo "ROLLBACK;" >> /tmp/dryrun.sql
+          psql "postgresql://postgres:${DATABASE_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres?sslmode=require" -v ON_ERROR_STOP=1 -f /tmp/dryrun.sql
+
+      - name: Apply migration
+        run: |
+          psql "postgresql://postgres:${DATABASE_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres?sslmode=require" -v ON_ERROR_STOP=1 -f "${{ github.event.inputs.sql_path }}"
+
+      - name: Verify objects exist
+        run: |
+          psql "postgresql://postgres:${DATABASE_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres?sslmode=require" -v ON_ERROR_STOP=1 -c "select to_regclass('public.match_messages');"

@@ -41,3 +41,13 @@ yarn-error.log*
 next-env.d.ts
 
 .trigger
+
+# Supabase CLI transient state
+supabase/.branches/
+supabase/.temp/
+supabase/.cache/
+supabase/.studio/
+supabase/.logs/
+
+# Local Docker artifacts (if generated)
+supabase/docker/
