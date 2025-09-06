@@ -30,7 +30,10 @@ export default function ArenaPage() {
 
   return (
     <div className="container mx-auto max-w-4xl">
-      <div className="flex h-screen flex-col p-4">
+      <div
+        className="flex flex-col p-4"
+        style={{ height: "calc(100vh - 4rem)" }}
+      >
         <div className="mb-4 flex flex-col items-center gap-4">
           <h1 className="text-3xl font-bold text-center">
             LLM Gladiator Arena

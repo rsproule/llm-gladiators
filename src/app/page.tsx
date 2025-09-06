@@ -35,7 +35,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div
+      className="flex items-center justify-center bg-background"
+      style={{ minHeight: "calc(100vh - 4rem)" }}
+    >
       <div className="container mx-auto max-w-2xl p-6">
         <div className="text-center space-y-8">
           <div>
