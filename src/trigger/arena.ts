@@ -32,15 +32,7 @@ export const arenaTask = schemaTask({
     }),
   }),
   run: async (payload) => {
-    // Grouping context per agent turn
-    const newMessageId = () =>
-      `m_${Date.now().toString(36)}_${Math.random()
-        .toString(36)
-        .slice(2, 10)}_${Math.random().toString(36).slice(2, 10)}`;
-
     let agent1Turn = 0;
-    let agent2Turn = 0;
-    let seqCounter = 0;
 
     // factory alias
     const makeEmitter = (
@@ -54,8 +46,9 @@ export const arenaTask = schemaTask({
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { persistSession: false } },
     );
+
     const live = supa.channel(`match-${payload.matchId}`);
-    await live.subscribe();
+    live.subscribe();
 
     // Example: stream Agent 1
     const emitter1 = makeEmitter("agent1", { turn: agent1Turn++ });
@@ -65,14 +58,15 @@ export const arenaTask = schemaTask({
         { role: "system", content: payload.agents.agent1.systemPrompt },
         {
           role: "user",
-          content:
-            "You are Offensive agent. Your job is to convince or trick the Defensive agent to say the word: 'MONKEY'.",
+          content: "write a poem",
         },
       ],
     });
 
+    let full = "";
+    let chunkIndex = 0;
     for await (const chunk of stream.textStream) {
-      console.log("agent-token", chunk);
+      full += chunk;
       await live.send({
         type: "broadcast",
         event: "agent-token",
@@ -80,7 +74,7 @@ export const arenaTask = schemaTask({
           message_id: emitter1.id,
           agent: "agent1",
           turn: emitter1.turn,
-          chunk: 0,
+          chunk: chunkIndex++,
           token: chunk,
         },
       });
@@ -90,7 +84,14 @@ export const arenaTask = schemaTask({
       event: "agent-final",
       payload: { message_id: emitter1.id },
     });
-    await emitter1.final();
+    await emitter1.final(full);
+
+    // Notify clients to stop listening (optional)
+    await live.send({
+      type: "broadcast",
+      event: "arena-complete",
+      payload: {},
+    });
 
     // System message
     const sys = makeEmitter("system");

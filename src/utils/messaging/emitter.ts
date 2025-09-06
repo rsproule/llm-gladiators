@@ -7,7 +7,7 @@ export type Emitter = {
   id: string;
   turn: number;
   token: (frame: string) => Promise<void>;
-  final: () => Promise<void>;
+  final: (finalText?: string) => Promise<void>;
   systemToken: (text: string) => Promise<void>;
 };
 
@@ -40,11 +40,11 @@ export function createEmitter(
         kind: "token",
       } as any);
     },
-    async final() {
+    async final(finalText?: string) {
       await insertMatchMessage({
         match_id: matchId,
         agent,
-        token: "",
+        token: finalText ?? "",
         message_id: id,
         turn,
         chunk: chunk++,
