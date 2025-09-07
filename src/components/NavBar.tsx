@@ -1,0 +1,42 @@
+import { SignOutButton } from "@/components/SignOutButton";
+import { isSignedIn } from "@/echo";
+import Link from "next/link";
+
+export async function NavBar() {
+  const signedIn = await isSignedIn();
+
+  return (
+    <nav className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+      <div className="container mx-auto px-4 h-16 flex items-center">
+        <div className="flex items-center gap-8">
+          <Link
+            href="/"
+            className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+          >
+            LLM Gladiator
+          </Link>
+
+          <Link
+            href="/create"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Create
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-4 ml-auto">
+          {!signedIn ? (
+            <Link
+              href="/api/echo/signin"
+              className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Sign In
+            </Link>
+          ) : (
+            <SignOutButton />
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}
