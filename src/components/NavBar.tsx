@@ -1,10 +1,9 @@
-"use client";
 import { SignOutButton } from "@/components/SignOutButton";
-import { useEchoUser } from "@/hooks/useUser";
+import { getUser } from "@/echo";
 import Link from "next/link";
 
-export function NavBar() {
-  const user = useEchoUser();
+export async function NavBar() {
+  const user = await getUser();
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">

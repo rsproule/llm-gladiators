@@ -6,6 +6,7 @@ export const {
 
   // Server-side utils
   isSignedIn,
+  getUser,
 
   // AI Providers
   openai,

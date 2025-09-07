@@ -12,11 +12,11 @@ importers:
         specifier: ^2.0.34
         version: 2.0.34(react@19.1.0)(zod@4.1.5)
       '@merit-systems/echo-next-sdk':
-        specifier: 0.0.5
-        version: 0.0.5(next@15.5.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@4.1.5)
+        specifier: 0.0.6
+        version: 0.0.6(next@15.5.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@4.1.5)
       '@merit-systems/echo-typescript-sdk':
-        specifier: ^1.0.11
-        version: 1.0.11(zod@4.1.5)
+        specifier: 1.0.13
+        version: 1.0.13(zod@4.1.5)
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -425,16 +425,13 @@ packages:
   '@jsonhero/path@1.0.21':
     resolution: {integrity: sha512-gVUDj/92acpVoJwsVJ/RuWOaHyG4oFzn898WNGQItLCTQ+hOaVlEaImhwE1WqOTf+l3dGOUkbSiVKlb3q1hd1Q==}
 
-  '@merit-systems/echo-next-sdk@0.0.5':
-    resolution: {integrity: sha512-c35jPjQ205OIupMR9ff9vuiBmxCKIn4FqkRRRg6SsuERGkL/afPB3RDXpPhCGwvKFaJNutO5scE//lEGnx8GyA==}
+  '@merit-systems/echo-next-sdk@0.0.6':
+    resolution: {integrity: sha512-I+Z3KAyB2xPp+eoht+GxSLQN8CATHyQ87l9th317XIfmqy4UtHFzYFgv6ZA6hYTfcalZYa0C444imfAKeHRe+A==}
     peerDependencies:
       next: '>=15.0.0'
 
-  '@merit-systems/echo-typescript-sdk@1.0.11':
-    resolution: {integrity: sha512-G4wmeiybjE0256jdY5LMrcj19XAS+O8P+evyQwUyhDEjdYgGD9iKNDBiEdyIuE5/TD6PrfhuX/WxcBW3FnNmHA==}
-
-  '@merit-systems/echo-typescript-sdk@1.0.7':
-    resolution: {integrity: sha512-7QlJOgv0clajCdbWQMv+Z79WAYHngyAFaPMITnXxFQncECdA3wOsSGgC7K23+qNiSCCJqG6p3cazuPHAdKACBA==}
+  '@merit-systems/echo-typescript-sdk@1.0.13':
+    resolution: {integrity: sha512-JB7hG2Ov+ReTX58J8eAwUqCSD+5//Eow5Eo2YsDu5jsNjsCujXMWzCFwmNPPO4/95FQ4i4EZc/EHW1B7CI8fqw==}
 
   '@mermaid-js/parser@0.6.2':
     resolution: {integrity: sha512-+PO02uGF6L6Cs0Bw8RpGhikVvMWEysfAyl27qTlroUB8jSWr1lL0Sf6zi78ZxlSnmgSY2AMMKVgghnN9jTtwkQ==}
@@ -511,6 +508,13 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@openrouter/ai-sdk-provider@1.2.0':
+    resolution: {integrity: sha512-stuIwq7Yb7DNmk3GuCtz+oS3nZOY4TXEV3V5KsknDGQN7Fpu3KRMQVWRc1J073xKdf0FC9EHOctSyzsACmp5Ag==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      ai: ^5.0.0
+      zod: ^3.24.1 || ^v4
 
   '@opentelemetry/api-logs@0.203.0':
     resolution: {integrity: sha512-9B9RU0H7Ya1Dx/Rkyc4stuBZSGVQF27WigitInx2QQoj6KUpEFYPKoWjdFTunJYxmXmh17HeBvbMa1EhGyPmqQ==}
@@ -3868,29 +3872,21 @@ snapshots:
 
   '@jsonhero/path@1.0.21': {}
 
-  '@merit-systems/echo-next-sdk@0.0.5(next@15.5.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@4.1.5)':
+  '@merit-systems/echo-next-sdk@0.0.6(next@15.5.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@4.1.5)':
     dependencies:
-      '@merit-systems/echo-typescript-sdk': 1.0.7(zod@4.1.5)
+      '@merit-systems/echo-typescript-sdk': 1.0.13(zod@4.1.5)
       ai: 5.0.34(zod@4.1.5)
       jwt-decode: 4.0.0
       next: 15.5.2(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     transitivePeerDependencies:
       - zod
 
-  '@merit-systems/echo-typescript-sdk@1.0.11(zod@4.1.5)':
+  '@merit-systems/echo-typescript-sdk@1.0.13(zod@4.1.5)':
     dependencies:
       '@ai-sdk/anthropic': 2.0.12(zod@4.1.5)
       '@ai-sdk/google': 2.0.12(zod@4.1.5)
       '@ai-sdk/openai': 2.0.24(zod@4.1.5)
-      ai: 5.0.34(zod@4.1.5)
-    transitivePeerDependencies:
-      - zod
-
-  '@merit-systems/echo-typescript-sdk@1.0.7(zod@4.1.5)':
-    dependencies:
-      '@ai-sdk/anthropic': 2.0.12(zod@4.1.5)
-      '@ai-sdk/google': 2.0.12(zod@4.1.5)
-      '@ai-sdk/openai': 2.0.24(zod@4.1.5)
+      '@openrouter/ai-sdk-provider': 1.2.0(ai@5.0.34(zod@4.1.5))(zod@4.1.5)
       ai: 5.0.34(zod@4.1.5)
     transitivePeerDependencies:
       - zod
@@ -3949,6 +3945,11 @@ snapshots:
       fastq: 1.19.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@openrouter/ai-sdk-provider@1.2.0(ai@5.0.34(zod@4.1.5))(zod@4.1.5)':
+    dependencies:
+      ai: 5.0.34(zod@4.1.5)
+      zod: 4.1.5
 
   '@opentelemetry/api-logs@0.203.0':
     dependencies:

@@ -1,8 +1,7 @@
-"use client";
 import { GladiatorCard } from "@/components/GladiatorCard";
-import { useEchoUser } from "@/hooks/useUser";
+import { getUser } from "@/echo";
+import { createAdminClient } from "@/utils/supabase/admin";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 type Gladiator = {
   id: string;
@@ -16,32 +15,8 @@ type Gladiator = {
   echo_user_id: string;
 };
 
-export default function GladiatorsPage() {
-  const user = useEchoUser();
-  const [gladiators, setGladiators] = useState<Gladiator[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchGladiators = async () => {
-      try {
-        const response = await fetch("/api/gladiators?includePublic=true");
-        if (response.ok) {
-          const result = await response.json();
-          setGladiators(result.gladiators || []);
-        } else {
-          setError("Failed to load gladiators");
-        }
-      } catch (err) {
-        console.error("Fetch gladiators error:", err);
-        setError("Failed to load gladiators");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchGladiators();
-  }, []);
+export default async function GladiatorsPage() {
+  const user = await getUser();
 
   if (!user) {
     return (
@@ -65,25 +40,36 @@ export default function GladiatorsPage() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto max-w-6xl p-6">
-        <div className="text-center">Loading gladiators...</div>
-      </div>
-    );
-  }
+  // Fetch all public gladiators server-side
+  const supa = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: gladiators, error } = await (supa as any)
+    .from("gladiator_agents")
+    .select(
+      "id, name, system_prompt, image_url, model, provider, is_public, created_at, echo_user_id",
+    )
+    .eq("is_public", true)
+    .order("created_at", { ascending: false });
 
   if (error) {
+    console.error("Failed to fetch gladiators:", error);
     return (
       <div className="container mx-auto max-w-4xl p-6">
-        <div className="text-center text-destructive">{error}</div>
+        <div className="text-center text-destructive">
+          Failed to load gladiators. Please try again.
+        </div>
       </div>
     );
   }
 
   // Filter gladiators by ownership, not by public status
-  const userGladiators = gladiators.filter((g) => g.echo_user_id === user?.id);
-  const otherGladiators = gladiators.filter((g) => g.echo_user_id !== user?.id);
+  const allGladiators = (gladiators || []) as Gladiator[];
+  const userGladiators = allGladiators.filter(
+    (g) => g.echo_user_id === user.id,
+  );
+  const otherGladiators = allGladiators.filter(
+    (g) => g.echo_user_id !== user.id,
+  );
 
   return (
     <div className="container mx-auto max-w-6xl p-6">

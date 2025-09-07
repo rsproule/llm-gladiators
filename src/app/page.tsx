@@ -1,9 +1,8 @@
-"use client";
 import { StartMatchButton } from "@/components/StartMatchButton";
-import { useEchoUser } from "@/hooks/useUser";
+import { getUser } from "@/echo";
 
-export default function HomePage() {
-  const user = useEchoUser();
+export default async function HomePage() {
+  const user = await getUser();
 
   return (
     <div

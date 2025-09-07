@@ -86,8 +86,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const includePublic = searchParams.get("includePublic") === "true";
+    // Always get all public gladiators
 
     const supa = createAdminClient();
 
