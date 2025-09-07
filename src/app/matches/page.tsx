@@ -1,3 +1,4 @@
+import { MatchCard } from "@/components/MatchCard";
 import { createAdminClient } from "@/utils/supabase/admin";
 import Link from "next/link";
 import { columns, type Match } from "./columns";
@@ -66,7 +67,7 @@ export default async function MatchesPage() {
   return (
     <div className="container mx-auto max-w-7xl p-6">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold">Match History</h1>
             <p className="text-muted-foreground mt-2">
@@ -75,7 +76,7 @@ export default async function MatchesPage() {
           </div>
           <Link
             href="/"
-            className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+            className="hidden md:inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
           >
             Start New Match
           </Link>
@@ -83,7 +84,7 @@ export default async function MatchesPage() {
 
         {/* Match Statistics */}
         {totalCompleted > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-card rounded-lg border p-4">
               <div className="text-2xl font-bold">{totalCompleted}</div>
               <div className="text-sm text-muted-foreground">Total Matches</div>
@@ -116,7 +117,39 @@ export default async function MatchesPage() {
           </div>
         )}
 
-        <DataTable columns={columns} data={allMatches} />
+        {/* Visual Separator */}
+        {totalCompleted > 0 && <div className="border-t border-border"></div>}
+
+        {/* Desktop Table */}
+        <div className="hidden md:block">
+          <DataTable columns={columns} data={allMatches} />
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-4">
+          {allMatches.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No matches yet.{" "}
+              <Link href="/" className="text-primary hover:underline">
+                Start the first battle!
+              </Link>
+            </div>
+          ) : (
+            allMatches.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))
+          )}
+        </div>
+
+        {/* Mobile Start Button */}
+        <div className="md:hidden">
+          <Link
+            href="/"
+            className="block w-full text-center bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+          >
+            Start New Match
+          </Link>
+        </div>
       </div>
     </div>
   );

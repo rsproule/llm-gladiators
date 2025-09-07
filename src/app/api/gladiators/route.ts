@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const CreateGladiatorSchema = z.object({
   name: z.string().min(1).max(50),
-  systemPrompt: z.string().min(1).max(2000),
+  systemPrompt: z.string().min(1).max(5000),
   imageUrl: z.string().url().optional().nullable(),
   model: z.string().default("gpt-4o"),
   provider: z.string().default("openai"),
@@ -78,16 +78,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const signedIn = await isSignedIn();
-    if (!signedIn) {
-      return NextResponse.json(
-        { ok: false, error: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
-    // Always get all public gladiators
-
+    // No auth required - anyone can view public gladiators
     const supa = createAdminClient();
 
     // Get all public gladiators for everyone to see (exclude API keys for security)

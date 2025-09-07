@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { matchId: string } },
+  { params }: { params: Promise<{ matchId: string }> },
 ) {
   try {
+    const { matchId } = await params;
     const supa = createAdminClient();
 
     // Fetch match with gladiator info (exclude API keys)
@@ -28,7 +29,7 @@ export async function GET(
         defense_agent:defense_agent_id(id, name, image_url)
       `,
       )
-      .eq("match_id", params.matchId)
+      .eq("match_id", matchId)
       .single();
 
     if (error || !match) {

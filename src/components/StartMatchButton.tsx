@@ -3,10 +3,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GladiatorSelector } from "./GladiatorSelector";
 
-type StartMatchButtonProps = {
-  isSignedIn: boolean;
-};
-
 type Gladiator = {
   id: string;
   name: string;
@@ -19,7 +15,7 @@ type Gladiator = {
   echo_user_id: string;
 };
 
-export function StartMatchButton({ isSignedIn }: StartMatchButtonProps) {
+export function StartMatchButton() {
   const [showSelector, setShowSelector] = useState(false);
   const [offenseGladiator, setOffenseGladiator] = useState<Gladiator | null>(
     null,
@@ -31,16 +27,7 @@ export function StartMatchButton({ isSignedIn }: StartMatchButtonProps) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const signIn = () => {
-    window.location.href = "/api/echo/signin";
-  };
-
   const startMatch = async () => {
-    if (!isSignedIn) {
-      setError("Please sign in first");
-      return;
-    }
-
     if (!offenseGladiator || !defenseGladiator) {
       setError("Please select both offense and defense gladiators");
       return;
@@ -80,17 +67,6 @@ export function StartMatchButton({ isSignedIn }: StartMatchButtonProps) {
       setIsStarting(false);
     }
   };
-
-  if (!isSignedIn) {
-    return (
-      <button
-        onClick={signIn}
-        className="bg-primary text-primary-foreground py-4 px-8 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-all transform hover:scale-105 shadow-lg"
-      >
-        Sign In to Play
-      </button>
-    );
-  }
 
   if (!showSelector) {
     return (

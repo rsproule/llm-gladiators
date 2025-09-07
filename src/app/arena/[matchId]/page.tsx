@@ -91,12 +91,6 @@ export default function ArenaPage() {
                     <SystemMessage message={m} />
                   ) : m.agent === "offense" ? (
                     <Message from="assistant">
-                      {matchData?.offense_agent && (
-                        <MessageAvatar
-                          src={matchData.offense_agent.image_url || ""}
-                          name={matchData.offense_agent.name}
-                        />
-                      )}
                       <MessageContent>
                         <div className="space-y-1">
                           {matchData?.offense_agent && (
@@ -107,6 +101,12 @@ export default function ArenaPage() {
                           <div>{m.text}</div>
                         </div>
                       </MessageContent>
+                      {matchData?.offense_agent && (
+                        <MessageAvatar
+                          src={matchData.offense_agent.image_url || ""}
+                          name={matchData.offense_agent.name}
+                        />
+                      )}
                     </Message>
                   ) : (
                     <Message from="user">

@@ -50,8 +50,8 @@ export const arenaTask = schemaTask({
     // Fetch gladiator configurations from database
     const adminSupa = createAdminClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: offenseGladiator, error: offenseError } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       adminSupa as any
     )
       .from("gladiator_agents")
@@ -60,8 +60,8 @@ export const arenaTask = schemaTask({
       .eq("is_public", true)
       .single();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: defenseGladiator, error: defenseError } = await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       adminSupa as any
     )
       .from("gladiator_agents")

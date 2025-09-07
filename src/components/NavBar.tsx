@@ -1,3 +1,4 @@
+import { MobileNav } from "@/components/MobileNav";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getUser } from "@/echo";
 import Link from "next/link";
@@ -23,40 +24,49 @@ export async function NavBar() {
             </span>
           </Link>
 
-          <Link
-            href="/gladiators"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Gladiators
-          </Link>
-          <Link
-            href="/matches"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Matches
-          </Link>
-          <Link
-            href="/create"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Create
-          </Link>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            <Link
+              href="/gladiators"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Gladiators
+            </Link>
+            <Link
+              href="/matches"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Matches
+            </Link>
+            <Link
+              href="/create"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Create
+            </Link>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
-          {!user ? (
-            <Link
-              href="/api/echo/signin"
-              className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Sign In
-            </Link>
-          ) : (
-            <div className="flex items-center gap-4">
-              <div className="text-sm font-medium">{user.email}</div>
-              <SignOutButton />
-            </div>
-          )}
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-4">
+            {!user ? (
+              <Link
+                href="/api/echo/signin"
+                className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Sign In
+              </Link>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="text-sm font-medium">{user.email}</div>
+                <SignOutButton />
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Navigation */}
+          <MobileNav user={user} />
         </div>
       </div>
     </nav>

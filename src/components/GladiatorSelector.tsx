@@ -96,11 +96,12 @@ export function GladiatorSelector({
                     </span>
                   </div>
                 )}
-                <div>
-                  <div className="font-medium">{selectedGladiator.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedGladiator.model} •{" "}
-                    {selectedGladiator.system_prompt.slice(0, 50)}...
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">
+                    {selectedGladiator.name}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {selectedGladiator.model}
                   </div>
                 </div>
               </div>
@@ -133,9 +134,9 @@ export function GladiatorSelector({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium">{gladiator.name}</div>
+                  <div className="font-medium truncate">{gladiator.name}</div>
                   <div className="text-sm text-muted-foreground truncate">
-                    {gladiator.system_prompt.slice(0, 60)}...
+                    {gladiator.system_prompt.slice(0, 80)}...
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {gladiator.model} •{" "}

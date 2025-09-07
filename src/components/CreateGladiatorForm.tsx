@@ -103,10 +103,10 @@ export function CreateGladiatorForm({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Define your gladiator's personality, strategy, and behavior..."
           className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-h-32 resize-y"
-          maxLength={2000}
+          maxLength={5000}
         />
         <p className="text-xs text-muted-foreground mt-1">
-          {prompt.length}/2000 characters
+          {prompt.length}/5000 characters
         </p>
       </div>
 

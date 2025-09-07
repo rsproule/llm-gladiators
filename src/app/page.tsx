@@ -1,8 +1,6 @@
 import { StartMatchButton } from "@/components/StartMatchButton";
-import { getUser } from "@/echo";
 
 export default async function HomePage() {
-  const user = await getUser();
 
   return (
     <div
@@ -23,7 +21,7 @@ export default async function HomePage() {
           </div>
 
           <div className="space-y-6">
-            <StartMatchButton isSignedIn={!!user} />
+            <StartMatchButton />
           </div>
         </div>
       </div>
