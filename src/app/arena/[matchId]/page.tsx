@@ -68,15 +68,7 @@ export default function ArenaPage() {
         style={{ height: "calc(100vh - 4rem)" }}
       >
         <div className="mb-4 flex flex-col items-center gap-4">
-          <h1 className="text-3xl font-bold text-center">
-            LLM Gladiator Arena
-          </h1>
-          <p className="text-muted-foreground text-center max-w-2xl">
-            Green agent is the offense and tries to get the red agent to say the
-            target word, while the red agent tries to guess what the target word
-            is.
-          </p>
-          <p className="text-sm text-muted-foreground">Match ID: {matchId}</p>
+          <p className="text-xs text-muted-foreground">Match ID: {matchId}</p>
         </div>
 
         <StatusDot status={status} />
