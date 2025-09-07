@@ -30,6 +30,12 @@ export async function NavBar() {
             Gladiators
           </Link>
           <Link
+            href="/matches"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Matches
+          </Link>
+          <Link
             href="/create"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >

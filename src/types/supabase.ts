@@ -88,6 +88,50 @@ export type Database = {
           updated_at?: string;
         };
       };
+      matches: {
+        Row: {
+          id: string;
+          match_id: string;
+          status: string;
+          target_word: string | null;
+          winner: string | null;
+          winner_reason: string | null;
+          total_turns: number;
+          started_at: string;
+          completed_at: string | null;
+          created_by: string | null;
+          offense_agent_id: string | null;
+          defense_agent_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          status?: string;
+          target_word?: string | null;
+          winner?: string | null;
+          winner_reason?: string | null;
+          total_turns?: number;
+          started_at?: string;
+          completed_at?: string | null;
+          created_by?: string | null;
+          offense_agent_id?: string | null;
+          defense_agent_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          match_id?: string;
+          status?: string;
+          target_word?: string | null;
+          winner?: string | null;
+          winner_reason?: string | null;
+          total_turns?: number;
+          started_at?: string;
+          completed_at?: string | null;
+          created_by?: string | null;
+          offense_agent_id?: string | null;
+          defense_agent_id?: string | null;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

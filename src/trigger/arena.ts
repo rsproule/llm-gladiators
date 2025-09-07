@@ -1,6 +1,7 @@
 import { AgentSchema, createAgentResponder } from "@/agents/responder";
 import { getTabooWord, getWinner } from "@/taboo/game";
 import { createEmitter } from "@/utils/messaging/emitter";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@supabase/supabase-js";
 import { schemaTask } from "@trigger.dev/sdk";
 import { type CoreMessage } from "ai";
@@ -45,6 +46,20 @@ export const arenaTask = schemaTask({
     const live = supa.channel(`match-${payload.matchId}`);
     live.subscribe();
 
+    // Game setup (private to agents via per-turn system prompts)
+    const targetWord = getTabooWord();
+
+    // Create match record with target word
+    const adminSupa = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (adminSupa as any).from("matches").insert({
+      match_id: payload.matchId,
+      status: "running",
+      target_word: targetWord,
+      total_turns: 0,
+      started_at: new Date().toISOString(),
+    });
+
     const makeEmitter = (
       agent: AgentLabel | SystemLabel,
       context: { turn?: number; messageId?: string; startSeq?: number } = {},
@@ -56,9 +71,6 @@ export const arenaTask = schemaTask({
         broadcastTokens: true, // stream tokens over broadcast
         sourceId: `arena:${payload.matchId}`,
       });
-
-    // Game setup (private to agents via per-turn system prompts)
-    const targetWord = getTabooWord();
 
     const sysStart = makeEmitter("system", { turn: -1 });
     await sysStart.systemToken("Match started with target word: " + targetWord);
@@ -118,13 +130,41 @@ export const arenaTask = schemaTask({
       if (winner) {
         const sysWin = makeEmitter("system");
         await sysWin.systemToken(`${winner} wins! ${reason}`);
+
+        // Update match record with result
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (adminSupa as any)
+          .from("matches")
+          .update({
+            status: "completed",
+            winner,
+            winner_reason: reason,
+            target_word: targetWord,
+            total_turns: turn + 1,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("match_id", payload.matchId);
         break;
       }
     }
 
-    if (turn === totalTurns - 1) {
+    if (turn === totalTurns) {
       const sysWin = makeEmitter("system");
       await sysWin.systemToken("Tie! The target word was: " + targetWord);
+
+      // Update match record for tie
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (adminSupa as any)
+        .from("matches")
+        .update({
+          status: "completed",
+          winner: "tie",
+          winner_reason: "Maximum turns reached",
+          target_word: targetWord,
+          total_turns: totalTurns,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("match_id", payload.matchId);
     }
 
     // Notify clients to stop listening (optional)
