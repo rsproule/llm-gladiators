@@ -14,6 +14,7 @@ export function CreateGladiatorForm({
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [image, setImage] = useState("");
+  const [userApiKey, setUserApiKey] = useState(apiKey);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -26,6 +27,16 @@ export function CreateGladiatorForm({
 
     if (!prompt.trim()) {
       setError("Please enter a system prompt for your gladiator");
+      return;
+    }
+
+    if (!userApiKey.trim()) {
+      setError("Please enter your Echo API key");
+      return;
+    }
+
+    if (!userApiKey.startsWith("echo_")) {
+      setError("Invalid Echo API key format. Should start with 'echo_'");
       return;
     }
 
@@ -42,8 +53,8 @@ export function CreateGladiatorForm({
           imageUrl: image.trim() || null,
           model: "gpt-4o",
           provider: "openai",
-          isPublic: false,
-          apiKey: apiKey,
+          isPublic: true, // All gladiators are public by default
+          apiKey: userApiKey,
           userId: userId,
         }),
       });
@@ -100,6 +111,23 @@ export function CreateGladiatorForm({
       </div>
 
       <div>
+        <label htmlFor="apiKey" className="block text-sm font-medium mb-2">
+          Echo API Key
+        </label>
+        <input
+          id="apiKey"
+          type="password"
+          value={userApiKey}
+          onChange={(e) => setUserApiKey(e.target.value)}
+          placeholder="echo_..."
+          className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          This API key will be used when your gladiator battles in the arena
+        </p>
+      </div>
+
+      <div>
         <label htmlFor="image" className="block text-sm font-medium mb-2">
           Avatar Image URL (Optional)
         </label>
@@ -140,7 +168,9 @@ export function CreateGladiatorForm({
         </button>
         <button
           onClick={handleCreate}
-          disabled={isCreating || !name.trim() || !prompt.trim()}
+          disabled={
+            isCreating || !name.trim() || !prompt.trim() || !userApiKey.trim()
+          }
           className="flex-1 bg-primary text-primary-foreground py-3 px-4 rounded-md font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isCreating ? "Creating..." : "Create Gladiator"}

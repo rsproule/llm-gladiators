@@ -31,9 +31,10 @@ export const arenaTask = schemaTask({
   schema: z.object({
     matchId: z.string().min(1),
     agents: z.object({
-      offense: AgentSchema,
-      defense: AgentSchema,
+      offenseId: z.string().uuid(),
+      defenseId: z.string().uuid(),
     }),
+    createdBy: z.string().optional(), // Echo user ID who created the match
   }),
   run: async (payload) => {
     // Setup Realtime Broadcast channel for live tokens
@@ -46,11 +47,60 @@ export const arenaTask = schemaTask({
     const live = supa.channel(`match-${payload.matchId}`);
     live.subscribe();
 
+    // Fetch gladiator configurations from database
+    const adminSupa = createAdminClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: offenseGladiator, error: offenseError } = await (
+      adminSupa as any
+    )
+      .from("gladiator_agents")
+      .select("*")
+      .eq("id", payload.agents.offenseId)
+      .eq("is_public", true)
+      .single();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: defenseGladiator, error: defenseError } = await (
+      adminSupa as any
+    )
+      .from("gladiator_agents")
+      .select("*")
+      .eq("id", payload.agents.defenseId)
+      .eq("is_public", true)
+      .single();
+
+    if (offenseError || !offenseGladiator) {
+      throw new Error(
+        `Offense gladiator not found or not public: ${payload.agents.offenseId}`,
+      );
+    }
+
+    if (defenseError || !defenseGladiator) {
+      throw new Error(
+        `Defense gladiator not found or not public: ${payload.agents.defenseId}`,
+      );
+    }
+
+    // Convert gladiator DB rows to AgentConfig format
+    const offenseConfig: z.infer<typeof AgentSchema> = {
+      systemPrompt: offenseGladiator.system_prompt,
+      apiKey: offenseGladiator.echo_api_key,
+      model: offenseGladiator.model,
+      provider: offenseGladiator.provider,
+    };
+
+    const defenseConfig: z.infer<typeof AgentSchema> = {
+      systemPrompt: defenseGladiator.system_prompt,
+      apiKey: defenseGladiator.echo_api_key,
+      model: defenseGladiator.model,
+      provider: defenseGladiator.provider,
+    };
+
     // Game setup (private to agents via per-turn system prompts)
     const targetWord = getTabooWord();
 
-    // Create match record with target word
-    const adminSupa = createAdminClient();
+    // Create match record with target word and agent references
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (adminSupa as any).from("matches").insert({
       match_id: payload.matchId,
@@ -58,6 +108,9 @@ export const arenaTask = schemaTask({
       target_word: targetWord,
       total_turns: 0,
       started_at: new Date().toISOString(),
+      created_by: payload.createdBy,
+      offense_agent_id: payload.agents.offenseId,
+      defense_agent_id: payload.agents.defenseId,
     });
 
     const makeEmitter = (
@@ -77,9 +130,9 @@ export const arenaTask = schemaTask({
 
     const offense: AgentLabel = "offense";
 
-    // Prepare agents
-    const offenseResponder = createAgentResponder(payload.agents.offense);
-    const defenseResponder = createAgentResponder(payload.agents.defense);
+    // Prepare agents using fetched gladiator configs
+    const offenseResponder = createAgentResponder(offenseConfig);
+    const defenseResponder = createAgentResponder(defenseConfig);
 
     // Conversation history and loop config (shared messages only)
     const conversation: ArenaMessage[] = [];

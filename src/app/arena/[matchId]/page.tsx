@@ -5,21 +5,54 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent } from "@/components/ai-elements/message";
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/ai-elements/message";
 import { useMatchStream } from "@/hooks/useMatchStream";
 import { useParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type Gladiator = {
+  id: string;
+  name: string;
+  image_url: string | null;
+};
+
+type MatchData = {
+  offense_agent: Gladiator | null;
+  defense_agent: Gladiator | null;
+};
 
 export default function ArenaPage() {
   const params = useParams();
   const matchId = params.matchId as string;
   const { messages, status } = useMatchStream(matchId);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [matchData, setMatchData] = useState<MatchData | null>(null);
 
   useEffect(() => {
     if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    // Fetch match data to get gladiator info
+    const fetchMatchData = async () => {
+      try {
+        const response = await fetch(`/api/matches/${matchId}`);
+        if (response.ok) {
+          const result = await response.json();
+          setMatchData(result.match);
+        }
+      } catch (error) {
+        console.error("Failed to fetch match data:", error);
+      }
+    };
+
+    fetchMatchData();
+  }, [matchId]);
 
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -58,11 +91,41 @@ export default function ArenaPage() {
                     <SystemMessage message={m} />
                   ) : m.agent === "offense" ? (
                     <Message from="assistant">
-                      <MessageContent>{m.text}</MessageContent>
+                      {matchData?.offense_agent && (
+                        <MessageAvatar
+                          src={matchData.offense_agent.image_url || ""}
+                          name={matchData.offense_agent.name}
+                        />
+                      )}
+                      <MessageContent>
+                        <div className="space-y-1">
+                          {matchData?.offense_agent && (
+                            <div className="text-xs font-medium text-green-600 opacity-75">
+                              {matchData.offense_agent.name} (Offense)
+                            </div>
+                          )}
+                          <div>{m.text}</div>
+                        </div>
+                      </MessageContent>
                     </Message>
                   ) : (
                     <Message from="user">
-                      <MessageContent>{m.text}</MessageContent>
+                      <MessageContent>
+                        <div className="space-y-1">
+                          {matchData?.defense_agent && (
+                            <div className="text-xs font-medium text-blue-600 opacity-75">
+                              {matchData.defense_agent.name} (Defense)
+                            </div>
+                          )}
+                          <div>{m.text}</div>
+                        </div>
+                      </MessageContent>
+                      {matchData?.defense_agent && (
+                        <MessageAvatar
+                          src={matchData.defense_agent.image_url || ""}
+                          name={matchData.defense_agent.name}
+                        />
+                      )}
                     </Message>
                   )}
                 </div>

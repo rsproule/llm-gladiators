@@ -90,7 +90,7 @@ export async function GET() {
 
     const supa = createAdminClient();
 
-    // Get all public gladiators for everyone to see
+    // Get all public gladiators for everyone to see (exclude API keys for security)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supa as any)
       .from("gladiator_agents")

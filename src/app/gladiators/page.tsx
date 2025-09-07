@@ -40,7 +40,7 @@ export default async function GladiatorsPage() {
     );
   }
 
-  // Fetch all public gladiators server-side
+  // Fetch all public gladiators server-side (exclude API keys for security)
   const supa = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: gladiators, error } = await (supa as any)
