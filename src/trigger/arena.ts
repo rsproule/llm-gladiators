@@ -50,25 +50,23 @@ export const arenaTask = schemaTask({
     // Fetch gladiator configurations from database
     const adminSupa = createAdminClient();
 
-    const { data: offenseGladiator, error: offenseError } = await (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      adminSupa as any
-    )
-      .from("gladiator_agents")
-      .select("*")
-      .eq("id", payload.agents.offenseId)
-      .eq("is_public", true)
-      .single();
+    const { data: offenseGladiator, error: offenseError } =
+      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (adminSupa as any)
+        .from("gladiator_agents")
+        .select("*")
+        .eq("id", payload.agents.offenseId)
+        .eq("is_public", true)
+        .single();
 
-    const { data: defenseGladiator, error: defenseError } = await (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      adminSupa as any
-    )
-      .from("gladiator_agents")
-      .select("*")
-      .eq("id", payload.agents.defenseId)
-      .eq("is_public", true)
-      .single();
+    const { data: defenseGladiator, error: defenseError } =
+      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (adminSupa as any)
+        .from("gladiator_agents")
+        .select("*")
+        .eq("id", payload.agents.defenseId)
+        .eq("is_public", true)
+        .single();
 
     if (offenseError || !offenseGladiator) {
       throw new Error(

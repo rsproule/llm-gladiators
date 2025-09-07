@@ -1,7 +1,6 @@
 import { StartMatchButton } from "@/components/StartMatchButton";
 
 export default async function HomePage() {
-
   return (
     <div
       className="flex items-center justify-center bg-background"
