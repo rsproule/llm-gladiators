@@ -100,6 +100,7 @@ export const columns: ColumnDef<Match>[] = [
   {
     accessorKey: "match_id",
     header: "Match",
+    size: 80,
     cell: ({ row }) => (
       <div className="font-mono text-sm">
         {row.getValue<string>("match_id").split("-").slice(-1)[0]}
@@ -109,18 +110,20 @@ export const columns: ColumnDef<Match>[] = [
   {
     id: "offense_agent",
     header: "Offense",
+    size: 120,
     cell: ({ row }) => (
-      <div className="text-sm">
-        {row.original.offense_agent?.name || "Unknown"}
+      <div className="text-sm truncate">
+        {row.original.offense_agent?.name || "Default"}
       </div>
     ),
   },
   {
     id: "defense_agent",
     header: "Defense",
+    size: 120,
     cell: ({ row }) => (
-      <div className="text-sm">
-        {row.original.defense_agent?.name || "Unknown"}
+      <div className="text-sm truncate">
+        {row.original.defense_agent?.name || "Default"}
       </div>
     ),
   },
@@ -164,7 +167,7 @@ export const columns: ColumnDef<Match>[] = [
         );
       }
 
-      const winner = row.getValue("winner");
+      const winner = row.getValue("winner") as string | null;
       const reason = row.original.winner_reason;
 
       if (!winner) {
@@ -181,7 +184,9 @@ export const columns: ColumnDef<Match>[] = [
             </HoverCardTrigger>
             <HoverCardContent className="w-80">
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Why {winner} won:</h4>
+                <h4 className="text-sm font-semibold">
+                  Why {String(winner)} won:
+                </h4>
                 <p className="text-sm text-muted-foreground">{reason}</p>
               </div>
             </HoverCardContent>
@@ -223,6 +228,7 @@ export const columns: ColumnDef<Match>[] = [
         </Button>
       );
     },
+    size: 60,
     cell: ({ row }) => (
       <div className="text-center">{row.getValue("total_turns")}</div>
     ),
@@ -241,12 +247,20 @@ export const columns: ColumnDef<Match>[] = [
         </Button>
       );
     },
+    size: 80,
     cell: ({ row }) => (
-      <span className="text-muted-foreground text-sm">
-        {formatDistanceToNow(new Date(row.original.started_at), {
-          addSuffix: true,
-        })}
-      </span>
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <span className="text-muted-foreground text-sm cursor-help">
+            {formatDistanceToNow(new Date(row.original.started_at))}
+          </span>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-auto">
+          <p className="text-sm">
+            Started: {formatDate(row.original.started_at)}
+          </p>
+        </HoverCardContent>
+      </HoverCard>
     ),
   },
   {
@@ -263,6 +277,7 @@ export const columns: ColumnDef<Match>[] = [
         </Button>
       );
     },
+    size: 80,
     cell: ({ row }) => {
       const status = row.original.status;
       const endDate = row.original.completed_at;
@@ -270,15 +285,23 @@ export const columns: ColumnDef<Match>[] = [
         return <span className="text-muted-foreground text-sm">—</span>;
       }
       return (
-        <span className="text-muted-foreground text-sm">
-          {formatDistanceToNow(new Date(endDate), { addSuffix: true })}
-        </span>
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <span className="text-muted-foreground text-sm cursor-help">
+              {formatDistanceToNow(new Date(endDate))}
+            </span>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-auto">
+            <p className="text-sm">Ended: {formatDate(endDate)}</p>
+          </HoverCardContent>
+        </HoverCard>
       );
     },
   },
   {
     id: "actions",
     header: "Actions",
+    size: 80,
     cell: ({ row }) => (
       <Link
         href={`/arena/${row.original.match_id}`}

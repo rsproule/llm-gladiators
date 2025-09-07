@@ -15,12 +15,12 @@ import {
 import { cn } from '@/lib/utils';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import {
-  type ComponentProps,
   createContext,
   useCallback,
   useContext,
   useEffect,
   useState,
+  type ComponentProps,
 } from 'react';
 
 export type InlineCitationProps = ComponentProps<'span'>;

@@ -1,12 +1,9 @@
-import { getUser } from "@/echo";
 import { createAdminClient } from "@/utils/supabase/admin";
 import Link from "next/link";
-import { columns } from "./columns";
+import { columns, type Match } from "./columns";
 import { DataTable } from "./data-table";
 
 export default async function MatchesPage() {
-  const user = await getUser();
-
   // Fetch all matches (running and completed) with agent names
   const supa = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,9 +41,8 @@ export default async function MatchesPage() {
   }
 
   // Calculate statistics for completed matches
-  const completedMatches = (matches || []).filter(
-    (m) => m.status === "completed",
-  );
+  const allMatches = (matches || []) as Match[];
+  const completedMatches = allMatches.filter((m) => m.status === "completed");
   const totalCompleted = completedMatches.length;
   const offenseWins = completedMatches.filter(
     (m) => m.winner === "offense",
@@ -120,7 +116,7 @@ export default async function MatchesPage() {
           </div>
         )}
 
-        <DataTable columns={columns} data={matches || []} />
+        <DataTable columns={columns} data={allMatches} />
       </div>
     </div>
   );
