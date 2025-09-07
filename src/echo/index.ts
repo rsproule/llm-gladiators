@@ -5,7 +5,6 @@ export const {
   handlers,
 
   // Server-side utils
-  getUser,
   isSignedIn,
 
   // AI Providers

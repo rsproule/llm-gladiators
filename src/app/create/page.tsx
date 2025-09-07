@@ -1,4 +1,5 @@
 "use client";
+import { useEchoUser } from "@/hooks/useUser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -9,6 +10,7 @@ export default function CreateGladiatorPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const user = useEchoUser();
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -25,23 +27,30 @@ export default function CreateGladiatorPage() {
     setError(null);
 
     try {
-      // For now, just store in localStorage
-      // In a real app, you'd save to a database
-      const gladiator = {
-        id: `gladiator-${Date.now()}`,
-        name: name.trim(),
-        prompt: prompt.trim(),
-        image: image.trim() || null,
-        createdAt: new Date().toISOString(),
-      };
+      const response = await fetch("/api/gladiators", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          systemPrompt: prompt.trim(),
+          imageUrl: image.trim() || null,
+          model: "gpt-4o",
+          provider: "openai",
+          isPublic: false,
+          apiKey:
+            "echo_62fddfbb9f2c49a085cf652eb0f0fbaf600c12fccbf9b5c6f0f749802faae494", // This will be replaced server-side with actual user key
+          userId: user?.id,
+        }),
+      });
 
-      const existingGladiators = JSON.parse(
-        localStorage.getItem("gladiators") || "[]",
-      );
-      existingGladiators.push(gladiator);
-      localStorage.setItem("gladiators", JSON.stringify(existingGladiators));
+      const result = await response.json();
 
-      // Navigate back to home or to a gladiators list
+      if (!result.ok) {
+        setError(result.error || "Failed to create gladiator");
+        return;
+      }
+
+      // Navigate back to home
       router.push("/");
     } catch (err) {
       console.error("Create gladiator error:", err);

@@ -1,9 +1,10 @@
+"use client";
 import { SignOutButton } from "@/components/SignOutButton";
-import { isSignedIn } from "@/echo";
+import { useEchoUser } from "@/hooks/useUser";
 import Link from "next/link";
 
-export async function NavBar() {
-  const signedIn = await isSignedIn();
+export function NavBar() {
+  const user = useEchoUser();
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
@@ -17,6 +18,12 @@ export async function NavBar() {
           </Link>
 
           <Link
+            href="/gladiators"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Gladiators
+          </Link>
+          <Link
             href="/create"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -25,7 +32,7 @@ export async function NavBar() {
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
-          {!signedIn ? (
+          {!user ? (
             <Link
               href="/api/echo/signin"
               className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
@@ -33,7 +40,10 @@ export async function NavBar() {
               Sign In
             </Link>
           ) : (
-            <SignOutButton />
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium">{user.email}</div>
+              <SignOutButton />
+            </div>
           )}
         </div>
       </div>

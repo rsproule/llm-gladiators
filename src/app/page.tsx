@@ -1,8 +1,9 @@
+"use client";
 import { StartMatchButton } from "@/components/StartMatchButton";
-import { isSignedIn } from "@/echo";
+import { useEchoUser } from "@/hooks/useUser";
 
-export default async function HomePage() {
-  const signedIn = await isSignedIn();
+export default function HomePage() {
+  const user = useEchoUser();
 
   return (
     <div
@@ -18,7 +19,13 @@ export default async function HomePage() {
           </div>
 
           <div className="space-y-6">
-            <StartMatchButton isSignedIn={signedIn} />
+            <StartMatchButton isSignedIn={!!user} />
+
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>🎯 One agent knows the target word</p>
+              <p>🛡️ The other tries to avoid saying it</p>
+              <p>⚔️ Who will outsmart whom?</p>
+            </div>
           </div>
         </div>
       </div>

@@ -7,11 +7,6 @@ export type Json =
   | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4";
-  };
   public: {
     Tables: {
       match_messages: {
@@ -50,6 +45,47 @@ export type Database = {
           turn?: number;
           chunk?: number;
           kind?: string;
+        };
+      };
+      gladiator_agents: {
+        Row: {
+          id: string;
+          name: string;
+          system_prompt: string;
+          image_url: string | null;
+          echo_user_id: string;
+          echo_api_key: string;
+          model: string;
+          provider: string;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          system_prompt: string;
+          image_url?: string | null;
+          echo_user_id: string;
+          echo_api_key: string;
+          model?: string;
+          provider?: string;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          system_prompt?: string;
+          image_url?: string | null;
+          echo_user_id?: string;
+          echo_api_key?: string;
+          model?: string;
+          provider?: string;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };
