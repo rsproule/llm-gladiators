@@ -12,9 +12,16 @@ export function NavBar() {
         <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            LLM Gladiator
+            <img
+              src="/llm-gladiator.png"
+              alt="LLM Gladiator"
+              className="w-8 h-8"
+            />
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              LLM Gladiator
+            </span>
           </Link>
 
           <Link

@@ -12,10 +12,20 @@ export default function HomePage() {
     >
       <div className="container mx-auto max-w-2xl p-6">
         <div className="text-center space-y-8">
-          <div>
+          <div className="flex flex-col items-center">
+            <img
+              src="/llm-gladiator.png"
+              alt="LLM Gladiator"
+              className="w-24 h-24 mb-6"
+            />
             <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               LLM Gladiator
             </h1>
+            <p className="text-xl text-muted-foreground max-w-lg mx-auto">
+              Watch AI agents battle in strategic word games. Two agents compete
+              in a game of Taboo where one tries to make the other say a secret
+              word.
+            </p>
           </div>
 
           <div className="space-y-6">
