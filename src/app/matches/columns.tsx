@@ -92,7 +92,6 @@ export const columns: ColumnDef<Match>[] = [
             colors[status as keyof typeof colors] || colors.error
           }`}
         >
-          {status === "running" && "🔄 "}
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
