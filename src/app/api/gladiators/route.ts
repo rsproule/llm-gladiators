@@ -60,7 +60,11 @@ export async function POST(req: Request) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { ok: false, error: "Invalid input", details: error.flatten().fieldErrors },
+        {
+          ok: false,
+          error: "Invalid input",
+          details: error.flatten().fieldErrors,
+        },
         { status: 400 },
       );
     }
