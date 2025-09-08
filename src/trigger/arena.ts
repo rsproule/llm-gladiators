@@ -149,7 +149,7 @@ export const arenaTask = schemaTask({
         label,
       );
 
-      const gameRules = `Game Rules:
+      const gameRules = `You are playing a game of Taboo. Game Rules:
       - The offense's goal is to get the defense to say the target word by accident.
       - The defense must avoid saying the target words, or explicity guess the target word in format "Guess: <target word>"
       `;
