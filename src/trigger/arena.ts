@@ -148,19 +148,27 @@ export const arenaTask = schemaTask({
         conversation,
         label,
       );
+
+      const gameRules = `Game Rules:
+      - The offense's goal is to get the defense to say the target word by accident.
+      - The defense must avoid saying the target words, or explicity guess the target word in format "Guess: <target word>"
+      `;
       const privateRolePrompt: CoreMessage[] =
         label === offense
           ? [
               {
                 role: "system",
                 content:
-                  'You are Offense. The target word is: "' + targetWord + '".',
+                  gameRules +
+                  '\n You are **Offense**. The target word is: "' +
+                  targetWord +
+                  '".',
               },
             ]
           : [
               {
                 role: "system",
-                content: "You are Defense.",
+                content: gameRules + "\n You are **Defense**.",
               },
             ];
       const coreMessages: CoreMessage[] = [
