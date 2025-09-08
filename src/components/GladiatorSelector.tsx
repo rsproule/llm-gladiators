@@ -18,6 +18,7 @@ type Gladiator = {
   is_public: boolean;
   created_at: string;
   echo_user_id: string;
+  creator_name?: string;
 };
 
 type GladiatorSelectorProps = {
@@ -102,6 +103,11 @@ export function GladiatorSelector({
                   </div>
                   <div className="text-sm text-muted-foreground truncate">
                     {selectedGladiator.model}
+                    {selectedGladiator.creator_name && (
+                      <span className="ml-1">
+                        • by {selectedGladiator.creator_name}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -141,6 +147,9 @@ export function GladiatorSelector({
                   <div className="text-xs text-muted-foreground">
                     {gladiator.model} •{" "}
                     {gladiator.is_public ? "Public" : "Private"}
+                    {gladiator.creator_name && (
+                      <span> • by {gladiator.creator_name}</span>
+                    )}
                   </div>
                 </div>
               </div>

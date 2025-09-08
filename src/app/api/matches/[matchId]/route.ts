@@ -25,8 +25,8 @@ export async function GET(
         started_at,
         completed_at,
         created_by,
-        offense_agent:offense_agent_id(id, name, image_url),
-        defense_agent:defense_agent_id(id, name, image_url)
+        offense_agent:offense_agent_id(id, name, image_url, echo_user_id, creator_name),
+        defense_agent:defense_agent_id(id, name, image_url, echo_user_id, creator_name)
       `,
       )
       .eq("match_id", matchId)

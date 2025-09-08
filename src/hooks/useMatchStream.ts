@@ -10,7 +10,7 @@ type GroupedMessage = {
   text: string;
   turn: number;
   done: boolean;
-  order?: number;
+  createdAt?: string;
 };
 
 type StreamState = {
@@ -19,7 +19,6 @@ type StreamState = {
   lastChunkByMessage: Record<string, number>;
   processedChunks: Record<string, true>; // strict dedupe by message_id:chunk only
   finalized: Record<string, true>;
-  orderCounter: number;
 };
 
 type Action =
@@ -43,6 +42,7 @@ type Action =
         agent: string;
         turn: number;
         text: string;
+        createdAt?: string;
       };
     }
   | {
@@ -69,10 +69,7 @@ function reducer(state: StreamState, action: Action): StreamState {
     case "disconnected":
       return { ...state, status: "disconnected" };
     case "initial": {
-      const grouped = new Map<
-        string,
-        GroupedMessage & { createdAt?: string }
-      >();
+      const grouped = new Map<string, GroupedMessage>();
       const finalized: Record<string, true> = { ...state.finalized };
       for (const r of action.payload.rows) {
         const id = r.message_id;
@@ -102,8 +99,9 @@ function reducer(state: StreamState, action: Action): StreamState {
           g.createdAt = createdAt;
         }
       }
-      const finalizedArr = Array.from(grouped.values())
-        .sort((a, b) => {
+      return {
+        ...state,
+        messages: Array.from(grouped.values()).sort((a, b) => {
           // Sort by created_at timestamp for true chronological order
           if (a.createdAt && b.createdAt) {
             return (
@@ -112,19 +110,7 @@ function reducer(state: StreamState, action: Action): StreamState {
           }
           // Fallback to turn if timestamps missing
           return a.turn - b.turn;
-        })
-        .map((g, index) => ({
-          id: g.id,
-          agent: g.agent,
-          text: g.text,
-          turn: g.turn,
-          done: g.done,
-          order: index, // Use sequential index for consistent ordering
-        }));
-      return {
-        ...state,
-        messages: finalizedArr,
-        orderCounter: finalizedArr.length,
+        }),
         finalized,
       };
     }
@@ -143,27 +129,17 @@ function reducer(state: StreamState, action: Action): StreamState {
       const nextMessages = state.messages.map((m) => ({ ...m }));
       let i = nextMessages.findIndex((m) => m.id === message_id);
       if (i === -1) {
-        // Insert in the correct position based on turn
-        const insertIndex = nextMessages.findIndex((m) => m.turn > (turn ?? 0));
+        // Always append new messages to the end for live streaming
         const newMessage = {
           id: message_id,
           agent,
           text: "",
           turn: turn ?? 0,
           done: false,
-          order: insertIndex === -1 ? nextMessages.length : insertIndex,
+          createdAt: new Date().toISOString(), // Current timestamp for new messages
         };
-        if (insertIndex === -1) {
-          nextMessages.push(newMessage);
-          i = nextMessages.length - 1;
-        } else {
-          nextMessages.splice(insertIndex, 0, newMessage);
-          i = insertIndex;
-          // Update order values for messages after insertion
-          for (let j = insertIndex + 1; j < nextMessages.length; j++) {
-            nextMessages[j].order = j;
-          }
-        }
+        nextMessages.push(newMessage);
+        i = nextMessages.length - 1;
       }
       if (nextMessages[i].done) return state;
       // Handle providers that emit cumulative full text frames instead of deltas
@@ -185,42 +161,45 @@ function reducer(state: StreamState, action: Action): StreamState {
           ...(typeof chunkNum === "number" ? { [message_id]: chunkNum } : {}),
         },
         processedChunks: { ...state.processedChunks, [key]: true },
-        orderCounter:
-          i === nextMessages.length - 1
-            ? state.orderCounter + 1
-            : state.orderCounter,
       };
     }
     case "final": {
-      const { message_id, agent, turn, text } = action.payload;
+      const { message_id, agent, turn, text, createdAt } = action.payload;
       const nextMessages = state.messages.map((m) => ({ ...m }));
       const i = nextMessages.findIndex((m) => m.id === message_id);
       if (i === -1) {
-        // Insert in the correct position based on turn
-        const insertIndex = nextMessages.findIndex((m) => m.turn > turn);
+        // Always append final messages to the end for live streaming
         const newMessage = {
           id: message_id,
           agent,
           text,
           turn,
           done: true,
-          order: insertIndex === -1 ? nextMessages.length : insertIndex,
+          createdAt: createdAt || new Date().toISOString(),
         };
-        if (insertIndex === -1) {
-          nextMessages.push(newMessage);
-        } else {
-          nextMessages.splice(insertIndex, 0, newMessage);
-          // Update order values for messages after insertion
-          for (let j = insertIndex + 1; j < nextMessages.length; j++) {
-            nextMessages[j].order = j;
-          }
-        }
+        nextMessages.push(newMessage);
       } else {
-        nextMessages[i] = { ...nextMessages[i], agent, text, turn, done: true };
+        nextMessages[i] = {
+          ...nextMessages[i],
+          agent,
+          text,
+          turn,
+          done: true,
+          createdAt: createdAt || nextMessages[i].createdAt,
+        };
       }
+      // Sort messages by timestamp after each final update
+      const sortedMessages = nextMessages.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        }
+        return a.turn - b.turn;
+      });
       return {
         ...state,
-        messages: nextMessages,
+        messages: sortedMessages,
         finalized: { ...state.finalized, [message_id]: true },
       };
     }
@@ -237,7 +216,6 @@ export function useMatchStream(matchId: string) {
     lastChunkByMessage: {},
     processedChunks: {},
     finalized: {},
-    orderCounter: 0,
   } as StreamState);
 
   useEffect(() => {
@@ -270,7 +248,7 @@ export function useMatchStream(matchId: string) {
       const row = payload as { message_id: string };
       const { data: finalRow } = await supa
         .from("match_messages")
-        .select("agent, turn, token")
+        .select("agent, turn, token, created_at")
         .eq("message_id", row.message_id)
         .eq("kind", "final")
         .order("id", { ascending: false })
@@ -283,6 +261,7 @@ export function useMatchStream(matchId: string) {
           agent: finalRow?.agent ?? "system",
           turn: finalRow?.turn ?? 0,
           text: finalRow?.token ?? "",
+          createdAt: finalRow?.created_at,
         },
       });
     });

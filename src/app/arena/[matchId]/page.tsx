@@ -18,6 +18,8 @@ type Gladiator = {
   id: string;
   name: string;
   image_url: string | null;
+  echo_user_id: string;
+  creator_name?: string;
 };
 
 type MatchData = {
@@ -75,53 +77,61 @@ export default function ArenaPage() {
 
         <Conversation className="flex-1 min-h-0">
           <ConversationContent className="h-full overflow-y-auto no-scrollbar">
-            {messages
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-              .map((m) => (
-                <div key={`${m.id}:${m.turn}`}>
-                  {m.agent === "system" ? (
-                    <SystemMessage message={m} />
-                  ) : m.agent === "offense" ? (
-                    <Message from="assistant">
-                      <MessageContent>
-                        <div className="space-y-1">
-                          {matchData?.offense_agent && (
-                            <div className="text-xs font-medium text-green-600 opacity-75">
-                              {matchData.offense_agent.name} (Offense)
-                            </div>
-                          )}
-                          <div>{m.text}</div>
-                        </div>
-                      </MessageContent>
-                      {matchData?.offense_agent && (
-                        <MessageAvatar
-                          src={matchData.offense_agent.image_url || ""}
-                          name={matchData.offense_agent.name}
-                        />
-                      )}
-                    </Message>
-                  ) : (
-                    <Message from="user">
-                      <MessageContent>
-                        <div className="space-y-1">
-                          {matchData?.defense_agent && (
-                            <div className="text-xs font-medium text-blue-600 opacity-75">
-                              {matchData.defense_agent.name} (Defense)
-                            </div>
-                          )}
-                          <div>{m.text}</div>
-                        </div>
-                      </MessageContent>
-                      {matchData?.defense_agent && (
-                        <MessageAvatar
-                          src={matchData.defense_agent.image_url || ""}
-                          name={matchData.defense_agent.name}
-                        />
-                      )}
-                    </Message>
-                  )}
-                </div>
-              ))}
+            {messages.map((m) => (
+              <div key={`${m.id}:${m.turn}`}>
+                {m.agent === "system" ? (
+                  <SystemMessage message={m} />
+                ) : m.agent === "offense" ? (
+                  <Message from="assistant">
+                    <MessageContent>
+                      <div className="space-y-1">
+                        {matchData?.offense_agent && (
+                          <div className="text-xs font-medium text-green-600 opacity-75">
+                            {matchData.offense_agent.name} (Offense)
+                            {matchData.offense_agent.creator_name && (
+                              <span className="text-xs text-muted-foreground ml-1">
+                                by {matchData.offense_agent.creator_name}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div>{m.text}</div>
+                      </div>
+                    </MessageContent>
+                    {matchData?.offense_agent && (
+                      <MessageAvatar
+                        src={matchData.offense_agent.image_url || ""}
+                        name={matchData.offense_agent.name}
+                      />
+                    )}
+                  </Message>
+                ) : (
+                  <Message from="user">
+                    <MessageContent>
+                      <div className="space-y-1">
+                        {matchData?.defense_agent && (
+                          <div className="text-xs font-medium text-blue-600 opacity-75">
+                            {matchData.defense_agent.name} (Defense)
+                            {matchData.defense_agent.creator_name && (
+                              <span className="text-xs text-muted-foreground ml-1">
+                                by {matchData.defense_agent.creator_name}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div>{m.text}</div>
+                      </div>
+                    </MessageContent>
+                    {matchData?.defense_agent && (
+                      <MessageAvatar
+                        src={matchData.defense_agent.image_url || ""}
+                        name={matchData.defense_agent.name}
+                      />
+                    )}
+                  </Message>
+                )}
+              </div>
+            ))}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>

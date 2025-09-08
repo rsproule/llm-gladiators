@@ -11,6 +11,7 @@ type Gladiator = {
   provider: string;
   is_public: boolean;
   created_at: string;
+  creator_name?: string;
 };
 
 type GladiatorCardProps = {

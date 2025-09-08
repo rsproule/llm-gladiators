@@ -1,4 +1,4 @@
-import { isSignedIn } from "@/echo";
+import { getUser } from "@/echo";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -16,8 +16,8 @@ const CreateGladiatorSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const signedIn = await isSignedIn();
-    if (!signedIn) {
+    const user = await getUser();
+    if (!user) {
       return NextResponse.json(
         { ok: false, error: "Authentication required" },
         { status: 401 },
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
         model: validatedData.model,
         provider: validatedData.provider,
         is_public: validatedData.isPublic,
+        creator_name: user.name || user.email || "Unknown",
       })
       .select()
       .single();
@@ -86,7 +87,7 @@ export async function GET() {
     const { data, error } = await (supa as any)
       .from("gladiator_agents")
       .select(
-        "id, name, system_prompt, image_url, model, provider, is_public, created_at, echo_user_id",
+        "id, name, system_prompt, image_url, model, provider, is_public, created_at, echo_user_id, creator_name",
       )
       .eq("is_public", true)
       .order("created_at", { ascending: false });

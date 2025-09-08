@@ -13,6 +13,7 @@ type Gladiator = {
   is_public: boolean;
   created_at: string;
   echo_user_id: string;
+  creator_name?: string;
 };
 
 export function StartMatchButton() {

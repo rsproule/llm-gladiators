@@ -13,6 +13,7 @@ type Gladiator = {
   is_public: boolean;
   created_at: string;
   echo_user_id: string;
+  creator_name?: string;
 };
 
 export default async function GladiatorsPage() {
@@ -46,7 +47,7 @@ export default async function GladiatorsPage() {
   const { data: gladiators, error } = await (supa as any)
     .from("gladiator_agents")
     .select(
-      "id, name, system_prompt, image_url, model, provider, is_public, created_at, echo_user_id",
+      "id, name, system_prompt, image_url, model, provider, is_public, created_at, echo_user_id, creator_name",
     )
     .eq("is_public", true)
     .order("created_at", { ascending: false });
