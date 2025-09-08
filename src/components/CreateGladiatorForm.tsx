@@ -123,7 +123,14 @@ export function CreateGladiatorForm({
           className="w-full px-3 py-2 border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          This API key will be used when your gladiator battles in the arena
+          <a
+            href="https://echo.merit.systems/app/6f0226b3-9d95-4d5a-96de-d178bd4dc9f7/keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Get API key
+          </a>
         </p>
       </div>
 
